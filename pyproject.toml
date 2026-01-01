@@ -1,0 +1,36 @@
+[project]
+name = "hackathon-todo"
+version = "0.1.0"
+description = "In-memory Python console todo application - Step 1 of hackathon project"
+readme = "README.md"
+authors = [
+    { name = "Sami Ullah", email = "samiullahmalik7474@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+hackathon-todo = "hackathon_todo.main:main"
+
+[build-system]
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--cov=src/hackathon_todo",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-fail-under=90",
+]

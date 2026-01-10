@@ -5,8 +5,6 @@
  * JWT tokens are stored in httpOnly cookies for security.
  */
 
-import { authConfig } from './auth-config'
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface User {

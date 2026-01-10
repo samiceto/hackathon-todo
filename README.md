@@ -1,11 +1,141 @@
 # Hackathon Todo
 
-A simple, elegant command-line task manager built with Python. Manage your todos with a clean interactive interface.
+**Progressive task management application** evolving from console app to cloud-native AI-powered system through 5 incremental phases.
 
-## Features
+---
 
+## 🎯 Current Status
+
+- ✅ **Step 1 Complete**: Console application with 97.44% test coverage (129 tests)
+- ✅ **Step 2 Complete**: Full-stack web application with FastAPI + Next.js + PostgreSQL
+- 📋 **Steps 3-5 Planned**: AI chatbot, Kubernetes deployment, cloud-native features
+
+---
+
+## 📁 Monorepo Structure
+
+This project is organized as a monorepo to support gradual evolution:
+
+```
+hackathon-todo/                    # Root
+├── backend/                       # Backend services
+│   ├── console/                  # ✅ Step 1: Console app (COMPLETE)
+│   │   ├── src/hackathon_todo/  # Console source code
+│   │   ├── tests/               # 129 tests, 97.44% coverage
+│   │   └── README.md            # Console app documentation
+│   └── api/                      # ✅ Step 2: FastAPI web API (COMPLETE)
+├── frontend/                      # ✅ Step 2: Next.js web app (COMPLETE)
+├── specs/                         # Organized specifications
+│   ├── features/                 # Feature specifications
+│   ├── api/                      # API endpoint specs
+│   ├── database/                 # Database schema specs
+│   ├── ui/                       # UI component specs
+│   ├── overview.md              # Project overview
+│   └── architecture.md          # System architecture
+├── .spec-kit/                     # Monorepo configuration
+│   └── config.yaml               # Phase definitions, tech stack
+├── history/                       # Development history (PHRs)
+└── README.md                     # This file
+```
+
+---
+
+## 🚀 Quick Start
+
+### Step 1: Console Application (Available Now) ✅
+
+**Prerequisites**:
+- Python 3.13 or higher
+- [UV](https://docs.astral.sh/uv/) package manager
+
+**Installation & Run**:
+```bash
+# Clone repository
+git clone <repository-url>
+cd hackathon-todo
+
+# Navigate to console app
+cd backend/console
+
+# Install dependencies
+uv sync
+
+# Run application
+uv run hackathon-todo
+# OR
+uv run python -m hackathon_todo.main
+```
+
+**Testing**:
+```bash
+cd backend/console
+
+# Run all tests
+uv run pytest
+
+# With coverage
+uv run pytest --cov=src/hackathon_todo --cov-report=html
+
+# Verbose output
+uv run pytest -v
+```
+
+### Step 2: Full-Stack Web Application (Available Now) ✅
+
+**Prerequisites**:
+- Python 3.13 or higher + [UV](https://docs.astral.sh/uv/)
+- Node.js 20+ and npm 10+
+- Neon PostgreSQL database
+
+**Backend Setup**:
+```bash
+# Navigate to backend API
+cd backend/api
+
+# Copy environment file
+cp .env.example .env
+# Edit .env with your DATABASE_URL, BETTER_AUTH_SECRET, CORS_ORIGINS
+
+# Install dependencies
+uv sync
+
+# Run database migrations
+uv run alembic upgrade head
+
+# Start backend server (http://localhost:8000)
+uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Frontend Setup** (in a new terminal):
+```bash
+# Navigate to frontend
+cd frontend
+
+# Copy environment file
+cp .env.local.example .env.local
+# Edit .env.local with BETTER_AUTH_SECRET, DATABASE_URL, NEXT_PUBLIC_API_URL
+
+# Install dependencies
+npm install
+
+# Start frontend server (http://localhost:3000)
+npm run dev
+```
+
+**Access the Application**:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+---
+
+## 📚 Console Application Features (Step 1)
+
+The current working console application includes:
+
+### Core Features
 - ✅ **Add Tasks** - Create tasks with title and optional description
-- ✅ **View Tasks** - See all tasks in a formatted list with status indicators
+- ✅ **View Tasks** - See all tasks in formatted list with status indicators
 - ✅ **Mark Complete** - Toggle tasks between complete (✓) and incomplete (○)
 - ✅ **Update Tasks** - Edit task titles and descriptions
 - ✅ **Delete Tasks** - Remove tasks from your list
@@ -13,42 +143,7 @@ A simple, elegant command-line task manager built with Python. Manage your todos
 - ✅ **Error Handling** - Robust validation and retry logic
 - ✅ **Graceful Exit** - Clean shutdown with Ctrl+C support
 
-## Quick Start
-
-### Prerequisites
-
-- Python 3.13 or higher
-- [UV](https://docs.astral.sh/uv/) package manager
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd hackathon-todo
-
-# UV will automatically install dependencies
-uv sync
-```
-
-### Running the Application
-
-```bash
-# Run the application
-uv run hackathon-todo
-```
-
-Or alternatively:
-
-```bash
-uv run python -m hackathon_todo.main
-```
-
-## Usage
-
-### Main Menu
-
-When you start the application, you'll see the main menu:
+### Usage Example
 
 ```
 ==================================================
@@ -67,15 +162,8 @@ Your simple command-line task manager
 6. Exit
 ==============================
 
-Enter your choice (1-6):
-```
+Enter your choice (1-6): 1
 
-### 1. Add Task
-
-Create a new task with a required title and optional description.
-
-**Example:**
-```
 Enter task title: Buy groceries
 Enter task description (optional, press Enter to skip): Milk, eggs, bread
 
@@ -84,225 +172,258 @@ Title: Buy groceries
 Description: Milk, eggs, bread
 ```
 
-### 2. View Tasks
+**Full console app documentation**: See [backend/console/README.md](backend/console/README.md)
 
-Display all tasks in a formatted list.
+---
 
-**Example:**
-```
---- All Tasks ---
+## 🗺️ Roadmap
 
-[1] ○ Buy groceries
-    Milk, eggs, bread
-[2] ✓ Complete project report
-[3] ○ Schedule dentist appointment
+### Step 1: Console Application ✅ **COMPLETE**
+**Status**: Implementation complete, all tests passing
 
-Total tasks: 3
-```
+**Deliverables**:
+- Python 3.13+ console application
+- In-memory task storage
+- 5 core CRUD features
+- 97.44% test coverage (129 tests)
+- Clean architecture (data → storage → UI → application)
 
-**Status Indicators:**
-- `○` - Incomplete task
-- `✓` - Complete task
+**Tech Stack**: Python 3.13+, UV, pytest, in-memory storage
 
-### 3. Mark Complete/Incomplete
+---
 
-Toggle a task's completion status by ID.
+### Step 2: Full-Stack Web Application ✅ **COMPLETE**
+**Status**: Full-stack web application implemented and tested
 
-**Example:**
-```
-Enter task ID to toggle completion: 1
-
-Task 1 marked as complete!
-[1] ✓ Buy groceries
-```
-
-### 4. Update Task
-
-Edit a task's title and/or description. Press Enter to skip a field and keep its current value.
-
-**Example:**
-```
-Updating task: Buy groceries
-Press Enter to skip a field and keep its current value.
-
-New title [current: Buy groceries] (press Enter to skip): Buy groceries and supplies
-New description [current: Milk, eggs, bread] (press Enter to skip):
-
-Task 1 updated successfully!
-[1] ✓ Buy groceries and supplies
-    Milk, eggs, bread
-```
-
-### 5. Delete Task
-
-Remove a task from your list by ID.
-
-**Example:**
-```
-Enter task ID to delete: 1
-
-Task 1 deleted successfully!
-Deleted: [1] Buy groceries and supplies
-
-Remaining tasks: 2
-```
-
-### 6. Exit
-
-Quit the application.
-
-```
-==================================================
-Goodbye! Thanks for using Hackathon Todo.
-==================================================
-```
-
-**Tip:** You can also press `Ctrl+C` at any time to exit gracefully.
-
-## Development
-
-### Project Structure
-
-```
-hackathon-todo/
-├── src/
-│   └── hackathon_todo/
-│       ├── __init__.py      # Package initialization
-│       ├── main.py          # Application entry point
-│       ├── models.py        # Task data model
-│       ├── storage.py       # In-memory task storage
-│       └── ui.py            # User interface functions
-├── tests/
-│   ├── conftest.py          # Pytest fixtures
-│   ├── test_models.py       # Task model tests
-│   ├── test_storage.py      # Storage layer tests
-│   ├── test_ui.py           # UI function tests
-│   └── test_integration.py  # Integration tests
-├── pyproject.toml           # Project configuration
-├── .python-version          # Python version (3.13)
-└── README.md                # This file
-```
-
-### Running Tests
-
-```bash
-# Run all tests with coverage
-uv run pytest
-
-# Run tests with verbose output
-uv run pytest -v
-
-# Run specific test file
-uv run pytest tests/test_models.py
-
-# Generate coverage report
-uv run pytest --cov=src/hackathon_todo --cov-report=html
-```
-
-**Test Coverage:** 97.44% (129 tests passing)
-
-### Code Quality
-
-The project follows these principles:
-- **Clean Architecture** - Separation of concerns (models, storage, UI, main)
-- **Test-Driven Development** - Comprehensive test coverage
-- **Type Hints** - Python 3.13+ type annotations
-- **Input Validation** - Robust error handling with retry logic
-- **User Experience** - Clear messages and intuitive interface
-
-### Module Guidelines
-
-- `models.py` - Data structures and validation (99 lines)
-- `storage.py` - CRUD operations for tasks (209 lines)
-- `ui.py` - User interface functions (386 lines) *
-- `main.py` - Application entry point and menu loop (88 lines)
-
-\* *Note: ui.py exceeds the 300-line guideline. Refactoring into smaller modules is recommended for future versions.*
-
-## Technical Details
-
-### Architecture
-
-The application uses a layered architecture:
-
-1. **Data Layer** (`models.py`) - Task entity with validation
-2. **Storage Layer** (`storage.py`) - In-memory CRUD operations
-3. **UI Layer** (`ui.py`) - User interaction and formatting
-4. **Application Layer** (`main.py`) - Menu loop and integration
-
-### Data Model
-
-```python
-@dataclass
-class Task:
-    id: int                    # Unique identifier
-    title: str                 # Task title (required)
-    description: str = ""      # Optional description
-    completed: bool = False    # Completion status
-    created_at: datetime       # Creation timestamp
-```
-
-### Storage
-
-- **Type:** In-memory dictionary
-- **Persistence:** Session-based (data lost on exit)
-- **ID Assignment:** Sequential auto-increment
-- **Future:** Migrateable to database (Step 2)
-
-## Roadmap
-
-### Step 1: Core Todo Features ✅ (Complete)
-- ✅ Add, view, update, delete tasks
-- ✅ Mark tasks complete/incomplete
-- ✅ Interactive CLI interface
-- ✅ Comprehensive test coverage (97.44%)
-
-### Step 2: Full-Stack Web Application (Planned)
-- FastAPI backend
-- Next.js frontend
-- PostgreSQL database
+**Features**:
+- RESTful API with FastAPI
+- Next.js 16+ web frontend
+- PostgreSQL database (Neon serverless)
+- User authentication (Better Auth + JWT)
+- Responsive web UI
 - Docker containerization
 
-### Step 3: AI-Powered Chatbot (Planned)
-- OpenAI integration
-- Natural language task management
-- Smart task suggestions
+**Tech Stack**:
+- **Backend**: FastAPI, SQLModel, Neon PostgreSQL, Better Auth
+- **Frontend**: Next.js 16+, React 19+, TypeScript, Tailwind CSS, shadcn/ui
+- **Infrastructure**: Docker, Docker Compose
 
-### Step 4: Local Kubernetes Deployment (Planned)
-- Minikube setup
-- Service orchestration
+**Migration Path**:
+- Console models → SQLModel ORM
+- In-memory storage → PostgreSQL
+- Console UI → Next.js components
+- 129 console tests → API integration tests
 
-### Step 5: Advanced Cloud Deployment (Planned)
-- Cloud provider integration
-- CI/CD pipeline
-- Production deployment
+---
 
-## Contributing
+### Step 3: AI-Powered Chatbot 📋 **PLANNED**
+**Status**: Specifications planned, implementation future
 
-This is a hackathon project developed using Spec-Driven Development (SDD) methodology. All features are specified before implementation, and all code is fully tested.
+**Planned Features**:
+- OpenAI Agents SDK integration
+- Model Context Protocol (MCP) server
+- Conversational task management
+- Natural language parsing
+- Intelligent task suggestions
 
-### Development Workflow
+**Tech Stack**: OpenAI Agents SDK, MCP SDK, OpenAI API (GPT-4), WebSocket
 
-1. **Specify** - Define requirements in `specs/`
-2. **Plan** - Create implementation plan
-3. **Tasks** - Break down into testable tasks
-4. **Implement** - Write tests first, then code (TDD)
-5. **Validate** - Verify acceptance criteria
+**Example Interactions**:
+- "Add task: Buy groceries tomorrow at 3pm" → Parses and creates task
+- "What should I work on next?" → AI-powered prioritization
+- "Summarize my week" → Task completion analysis
 
-## License
+---
+
+### Step 4: Local Kubernetes Deployment 📋 **PLANNED**
+**Status**: Planned for future implementation
+
+**Planned Features**:
+- Dockerized multi-service application
+- Kubernetes manifests (Deployments, Services, Ingress)
+- Helm charts for orchestration
+- Minikube local cluster
+
+**Tech Stack**: Docker, Minikube, Kubernetes, Helm
+
+---
+
+### Step 5: Advanced Cloud Deployment 📋 **PLANNED**
+**Status**: Planned for future implementation
+
+**Planned Features**:
+- CI/CD pipeline (GitHub Actions)
+- Event-driven architecture (Kafka + Dapr)
+- Monitoring (Prometheus + Grafana)
+- AIOps with kubectl-ai
+
+**Tech Stack**: GitHub Actions, Kafka, Dapr, Prometheus, Grafana, kubectl-ai
+
+---
+
+## 🏗️ Architecture
+
+### Current: Console Application (Step 1)
+
+**Layered Architecture**:
+```
+Application Layer (main.py)     ← Menu loop, routing
+       ↓
+UI Layer (ui.py)                ← User interaction, formatting
+       ↓
+Storage Layer (storage.py)      ← CRUD operations
+       ↓
+Data Layer (models.py)          ← Task entity, validation
+```
+
+**Storage**: In-memory dictionary (session-based, data lost on exit)
+
+**Full architecture documentation**: See [specs/architecture.md](specs/architecture.md)
+
+### Future: Full-Stack Web Application (Step 2+)
+
+**High-Level System**:
+```
+Browser → Next.js Frontend → FastAPI Backend → PostgreSQL Database
+                                    ↓
+                            OpenAI Agents (Step 3+)
+```
+
+**Detailed architecture diagrams**: See [specs/architecture.md](specs/architecture.md)
+
+---
+
+## 📖 Documentation
+
+### Core Documents
+- **[specs/overview.md](specs/overview.md)** - Comprehensive project overview, all 5 phases
+- **[specs/architecture.md](specs/architecture.md)** - Detailed architecture for all phases
+- **[.spec-kit/config.yaml](.spec-kit/config.yaml)** - Monorepo configuration, phase definitions
+
+### Component-Specific
+- **[backend/console/README.md](backend/console/README.md)** - Console app documentation (Step 1)
+- **[CLAUDE.md](CLAUDE.md)** - Root development context
+- **[backend/CLAUDE.md](backend/CLAUDE.md)** - Backend development context
+- **[frontend/CLAUDE.md](frontend/CLAUDE.md)** - Frontend development context (placeholder)
+
+### Specifications
+- **[specs/features/](specs/features/)** - Feature specifications
+- **[specs/api/](specs/api/)** - API endpoint specifications (planned)
+- **[specs/database/](specs/database/)** - Database schema specifications (planned)
+- **[specs/ui/](specs/ui/)** - UI component specifications (planned)
+
+### Historical Reference
+- **[specs/001-step-1-core-features/](specs/001-step-1-core-features/)** - Original Step 1 specs
+- **[history/prompts/](history/prompts/)** - Prompt History Records (PHRs)
+
+---
+
+## 🧪 Testing
+
+### Console Application (Step 1)
+
+**Coverage**: 97.44% (129 tests passing)
+
+```bash
+cd backend/console
+
+# Run all tests
+uv run pytest
+
+# With coverage report
+uv run pytest --cov=src/hackathon_todo --cov-report=html
+
+# Specific test file
+uv run pytest tests/test_models.py
+
+# Verbose output
+uv run pytest -v
+```
+
+**Test Organization**:
+- `test_models.py` - Task dataclass tests
+- `test_storage.py` - CRUD operation tests
+- `test_ui.py` - UI function tests
+- `test_integration.py` - End-to-end workflow tests
+
+---
+
+## 🛠️ Development Methodology
+
+### Spec-Driven Development (SDD)
+
+**Core Principle**: Specifications define *what* to build; Claude Code generates *how* to build it.
+
+**Workflow**:
+1. **Specify** - Define requirements in `specs/<type>/<feature>.md`
+2. **Plan** - Create implementation plan with architecture decisions
+3. **Tasks** - Break down into testable, actionable tasks
+4. **Implement** - Execute via Claude Code using TDD
+5. **Validate** - Verify acceptance criteria met
+
+**Benefits**:
+- Forces clear thinking about requirements before implementation
+- Creates reusable intelligence for future projects
+- Ensures traceability and documentation
+- Enables AI-assisted development at scale
+
+### Quality Standards
+
+**Testing**:
+- Minimum 90% code coverage (current: 97.44%)
+- Test-Driven Development (TDD)
+- Unit, integration, and E2E tests
+
+**Code Quality**:
+- Type hints (Python), TypeScript (frontend)
+- Clean architecture principles
+- Separation of concerns
+- Comprehensive documentation
+
+---
+
+## 🤝 Contributing
+
+This is a hackathon project demonstrating Spec-Driven Development methodology.
+
+### Development Process
+
+1. Review specifications in `specs/`
+2. Follow TDD approach (write tests first)
+3. Maintain >90% test coverage
+4. Document changes in Prompt History Records (PHRs)
+5. Adhere to clean architecture principles
+
+**See**: [CLAUDE.md](CLAUDE.md) for detailed development guidelines
+
+---
+
+## 📝 License
 
 [Specify license here]
 
-## Acknowledgments
+---
 
-Built with:
-- Python 3.13
-- UV package manager
-- pytest for testing
+## 🙏 Acknowledgments
+
+**Built with**:
+- Python 3.13, UV package manager, pytest
 - Spec-Driven Development methodology
+- Claude Code for implementation
+
+**Part of**: Hackathon II - The Evolution of Todo
+
+---
+
+## 📞 Support
+
+For questions or issues:
+- Open an issue in the repository
+- Review documentation in `specs/` directory
+- Check `history/prompts/` for development history
 
 ---
 
 **Made with ❤️ for the Hackathon**
 
-For questions or issues, please open an issue in the repository.
+**Last Updated**: 2026-01-09 (Step 2 Complete - Full-stack web application)

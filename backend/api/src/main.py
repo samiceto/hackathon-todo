@@ -55,6 +55,20 @@ async def health_check():
     return {"status": "ok"}
 
 
+@app.get("/debug/cors")
+async def debug_cors():
+    """Debug endpoint to check CORS configuration.
+
+    Returns:
+        dict: Current CORS settings
+    """
+    return {
+        "cors_origins": settings.CORS_ORIGINS,
+        "cors_origins_raw": settings.cors_origins_raw,
+        "debug": settings.DEBUG
+    }
+
+
 # API router registration
 from .api import auth, tasks
 

@@ -3,9 +3,8 @@
 Loads environment variables and provides typed settings for the application.
 """
 from typing import List, Union
-from pydantic import PostgresDsn, field_validator, BeforeValidator
+from pydantic import PostgresDsn, field_validator, Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Annotated
 import json
 
 
@@ -58,8 +57,12 @@ class Settings(BaseSettings):
     # Authentication
     BETTER_AUTH_SECRET: str
 
-    # CORS configuration
-    CORS_ORIGINS: Annotated[List[str], BeforeValidator(parse_cors_origins)] = ["http://localhost:3000"]
+    # CORS configuration (stored as string to prevent auto-JSON parsing)
+    cors_origins_raw: str = Field(
+        default='["http://localhost:3000"]',
+        alias="CORS_ORIGINS",
+        exclude=True  # Exclude from serialization
+    )
 
     # Application environment
     DEBUG: bool = True
@@ -74,6 +77,16 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore"
     )
+
+    @computed_field
+    @property
+    def CORS_ORIGINS(self) -> List[str]:
+        """Parse and return CORS origins as a list.
+
+        This computed field prevents pydantic-settings from auto-parsing
+        the CORS_ORIGINS env var as JSON, which fails on empty strings.
+        """
+        return parse_cors_origins(self.cors_origins_raw)
 
     @field_validator("BETTER_AUTH_SECRET")
     @classmethod

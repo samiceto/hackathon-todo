@@ -217,15 +217,56 @@ See `.specify/memory/constitution.md` for code quality, testing, performance, se
 
 **Hackathon Todo** is a progressive task management application being built in 5 incremental steps, from a simple CLI tool to a cloud-deployed full-stack application with AI capabilities.
 
-**Current Status**: Step 1 Complete (Core Todo Features) ✅
+**Current Status**: Step 1 Complete, Monorepo Restructuring in Progress 🔨
 
-**Technology Stack (Step 1)**:
-- Python 3.13+ with type hints
-- UV package manager
-- pytest with pytest-cov (97.44% coverage)
-- In-memory storage (migrating to PostgreSQL in Step 2)
+## Monorepo Structure
 
-**Entry Point**: `uv run hackathon-todo` or `uv run python -m hackathon_todo.main`
+This project is organized as a monorepo to support gradual evolution from console app to full-stack application:
+
+```
+hackathon-todo/                    # Root (you are here)
+├── .spec-kit/                     # Monorepo configuration
+│   └── config.yaml               # Phase definitions, tech stack
+├── backend/                       # Backend services
+│   ├── console/                  # Step 1: Original console app (working)
+│   │   ├── src/hackathon_todo/  # Console app source
+│   │   ├── tests/               # Console app tests (129 tests, 97.44% coverage)
+│   │   ├── pyproject.toml       # Python project config
+│   │   └── README.md            # Console app documentation
+│   └── CLAUDE.md                # Backend-specific context (future FastAPI)
+├── frontend/                      # Frontend application (future)
+│   └── CLAUDE.md                # Frontend-specific context (future Next.js)
+├── specs/                         # Organized specifications
+│   ├── features/                 # Feature specifications
+│   ├── api/                      # API endpoint specifications
+│   ├── database/                 # Database schema specifications
+│   ├── ui/                       # UI component specifications
+│   ├── overview.md              # Project overview
+│   └── architecture.md          # System architecture
+├── history/                       # Development history
+│   └── prompts/                  # Prompt History Records
+├── CLAUDE.md                     # Root context (this file)
+└── README.md                     # User documentation
+```
+
+## Navigation Guide
+
+**When working on different parts of the project, read the appropriate CLAUDE.md:**
+
+- **Root CLAUDE.md** (this file): Monorepo organization, SDD workflow, general guidelines
+- **backend/CLAUDE.md**: Backend-specific context (console app, future FastAPI)
+- **frontend/CLAUDE.md**: Frontend-specific context (future Next.js)
+
+**Technology Stack**:
+- **Current (Step 1)**: Python 3.13+, UV, pytest, in-memory storage
+- **Future (Step 2+)**: FastAPI, Next.js 16+, PostgreSQL, Better Auth, Docker
+- **Future (Step 3+)**: OpenAI chatbot, MCP integration
+- **Future (Step 4+)**: Kubernetes deployment
+
+**Entry Points**:
+- Console app: `cd backend/console && uv run hackathon-todo`
+- Backend API: (not yet implemented)
+- Frontend: (not yet implemented)
 
 ## Current Implementation Status
 
@@ -274,65 +315,20 @@ The application uses clean architecture with clear separation of concerns:
 
 ## Module Organization
 
-### src/hackathon_todo/
+### Console App (backend/console/src/hackathon_todo/)
 
-**__init__.py** (7 lines)
-- Package initialization
-- Exports main components
+For detailed console app architecture, see **backend/CLAUDE.md**
 
-**models.py** (99 lines) ✅
-- `Task` dataclass with validation
-- Fields: id, title, description, completed, created_at
-- Type hints for all fields
-- Immutable ID and created_at after creation
+**Key modules**:
+- **models.py**: Task dataclass with validation
+- **storage.py**: In-memory CRUD operations
+- **ui.py**: Console interface functions
+- **main.py**: Application entry point
 
-**storage.py** (209 lines) ✅
-- `TaskStorage` class for in-memory CRUD operations
-- Methods: add(), get(), get_all(), update(), mark_complete(), delete(), count()
-- Sequential ID assignment (auto-increment)
-- Error handling for invalid IDs
-- Thread-safe for single-process use
-
-**ui.py** (386 lines) ⚠️
-- All user interface functions
-- Input helpers: get_non_empty_input(), get_task_id(), get_optional_input()
-- UI operations: add_task_ui(), view_tasks_ui(), mark_complete_ui(), update_task_ui(), delete_task_ui()
-- display_menu() function
-- **Note**: Exceeds 300-line guideline; refactoring recommended for Step 2
-
-**main.py** (88 lines) ✅
-- Application entry point
-- Menu loop with choice routing
-- Welcome/goodbye messages
-- KeyboardInterrupt (Ctrl+C) handling
-- Integrates all 5 user stories
-
-### tests/
-
-**conftest.py**
-- pytest fixtures
-- TaskStorage fixture with clean state per test
-
-**test_models.py**
-- Task dataclass tests
-- Validation tests
-
-**test_storage.py**
-- CRUD operation tests
-- Edge case handling
-
-**test_ui.py**
-- UI function tests
-- Input validation tests
-- Error handling tests
-
-**test_integration.py**
-- End-to-end workflow tests
-- TestDisplayMenu (1 test)
-- TestFullCRUDWorkflow (2 tests)
-- TestEdgeCaseWorkflows (3 tests)
-- TestDataPersistence (2 tests)
-- TestMainFunction (7 tests)
+**Tests** (backend/console/tests/):
+- 129 tests, 97.44% coverage
+- Unit tests: test_models.py, test_storage.py, test_ui.py
+- Integration tests: test_integration.py
 
 ## Key Implementation Details
 
@@ -409,7 +405,8 @@ while True:
 ### Running Tests
 
 ```bash
-# Run all tests with coverage
+# Console app tests
+cd backend/console
 uv run pytest
 
 # Verbose output
@@ -496,38 +493,43 @@ All development work is documented in `history/prompts/001-step-1-core-features/
 ### Running the Application
 
 ```bash
-# Primary method
+# Console app (Step 1)
+cd backend/console
 uv run hackathon-todo
-
-# Alternative
+# OR
 uv run python -m hackathon_todo.main
 
 # Run tests
+cd backend/console
 uv run pytest
 
 # Install dependencies
+cd backend/console
 uv sync
 ```
 
 ## Quick Reference
 
-### Important Paths
-- **Source**: `src/hackathon_todo/`
-- **Tests**: `tests/`
-- **Specs**: `specs/001-step-1-core-features/`
-- **History**: `history/prompts/001-step-1-core-features/`
+### Important Paths (Monorepo)
+- **Console app source**: `backend/console/src/hackathon_todo/`
+- **Console app tests**: `backend/console/tests/`
+- **Specs**: `specs/` (organized by type: features/, api/, database/, ui/)
+- **History**: `history/prompts/`
 - **Constitution**: `.specify/memory/constitution.md`
+- **Monorepo config**: `.spec-kit/config.yaml`
 
 ### Key Files to Reference
-- **README.md**: User documentation, quick start guide
-- **tasks.md**: Implementation roadmap (41 tasks, Phases 1-9)
-- **plan.md**: Architecture decisions and design
-- **spec.md**: User stories and acceptance criteria
+- **Root README.md**: Monorepo overview, quick start guide
+- **backend/console/README.md**: Console app documentation
+- **backend/CLAUDE.md**: Backend-specific context
+- **frontend/CLAUDE.md**: Frontend-specific context (placeholder)
+- **specs/overview.md**: Project overview (future)
+- **specs/architecture.md**: System architecture (future)
 
 ### Current Branch
 - **Name**: `001-step-1-core-features`
-- **Status**: Step 1 implementation complete, Phase 9 (polish) in progress
+- **Status**: Step 1 complete, monorepo restructuring in progress
 
 ---
 
-**Last Updated**: 2026-01-01 (Phase 9 - Polish & Documentation in progress)
+**Last Updated**: 2026-01-05 (Monorepo restructuring - Phase 1)

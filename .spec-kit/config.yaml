@@ -1,0 +1,251 @@
+# Spec-Kit Plus Monorepo Configuration
+# Hackathon Todo - Evolution from Console to Cloud-Native AI Application
+
+name: hackathon-todo
+version: "2.0.0"
+description: "Progressive task management application - 5-phase evolution from CLI to cloud-deployed full-stack AI chatbot"
+
+# Directory structure configuration
+structure:
+  specs_dir: specs
+  features_dir: specs/features
+  api_dir: specs/api
+  database_dir: specs/database
+  ui_dir: specs/ui
+  backend_dir: backend
+  frontend_dir: frontend
+  history_dir: history
+  constitution: .specify/memory/constitution.md
+
+# Development phases and their features
+phases:
+  - id: phase1
+    name: "Step 1: Console Todo Application"
+    status: complete
+    description: "In-memory Python console app with basic CRUD operations"
+    features:
+      - task-crud-console
+    deliverables:
+      - Console application (backend/console/)
+      - 97.44% test coverage (129 tests)
+      - Spec-driven development artifacts
+    tech_stack:
+      - Python 3.13+
+      - UV package manager
+      - pytest + pytest-cov
+      - In-memory storage (dataclasses + dictionaries)
+    entry_point: "cd backend/console && uv run hackathon-todo"
+
+  - id: phase2
+    name: "Step 2: Full-Stack Web Application"
+    status: in-progress
+    description: "FastAPI backend + Next.js frontend with PostgreSQL and authentication"
+    features:
+      - task-crud-api
+      - user-authentication
+      - web-ui
+    deliverables:
+      - FastAPI RESTful backend (backend/api/)
+      - Next.js 16+ frontend (frontend/)
+      - PostgreSQL database (Neon serverless)
+      - Better Auth with JWT
+      - Docker Compose orchestration
+    tech_stack:
+      backend:
+        - FastAPI (async/await)
+        - SQLModel (ORM)
+        - Neon PostgreSQL
+        - Better Auth (JWT)
+        - pytest + httpx (API testing)
+      frontend:
+        - Next.js 16+ (App Router)
+        - React 19+
+        - TypeScript 5+
+        - Tailwind CSS 4+
+        - shadcn/ui components
+        - Better Auth (client)
+    entry_points:
+      backend: "cd backend/api && uvicorn app.main:app --reload"
+      frontend: "cd frontend && npm run dev"
+      docker: "docker-compose up"
+
+  - id: phase3
+    name: "Step 3: AI-Powered Chatbot"
+    status: planned
+    description: "OpenAI integration with MCP for intelligent task management assistant"
+    features:
+      - chatbot-integration
+      - openai-agents
+      - mcp-integration
+      - natural-language-processing
+    deliverables:
+      - OpenAI Agents SDK integration
+      - MCP (Model Context Protocol) server
+      - Chatbot UI component
+      - Conversation history storage
+    tech_stack:
+      - OpenAI Agents Python SDK
+      - Official MCP SDK
+      - OpenAI API (GPT-4)
+      - WebSocket for real-time chat
+
+  - id: phase4
+    name: "Step 4: Local Kubernetes Deployment"
+    status: planned
+    description: "Containerized deployment on Minikube with local Kubernetes orchestration"
+    features:
+      - kubernetes-deployment
+      - minikube-setup
+      - helm-charts
+      - container-orchestration
+    deliverables:
+      - Docker images (backend, frontend)
+      - Kubernetes manifests (Deployments, Services, Ingress)
+      - Helm charts
+      - Minikube deployment guide
+    tech_stack:
+      - Docker
+      - Minikube
+      - Kubernetes
+      - Helm
+      - kubectl
+
+  - id: phase5
+    name: "Step 5: Advanced Cloud Deployment"
+    status: planned
+    description: "Production deployment with CI/CD, monitoring, and event-driven architecture"
+    features:
+      - cicd-pipeline
+      - event-driven-architecture
+      - monitoring-observability
+      - aiops
+    deliverables:
+      - GitHub Actions CI/CD
+      - Kafka + Dapr integration
+      - Prometheus + Grafana monitoring
+      - AIOps with kubectl-ai
+      - Cloud deployment blueprints
+    tech_stack:
+      - GitHub Actions
+      - Kafka (event streaming)
+      - Dapr (distributed application runtime)
+      - Prometheus (metrics)
+      - Grafana (dashboards)
+      - kubectl-ai (AIOps)
+
+# Feature registry
+features:
+  # Phase 1 features
+  - id: task-crud-console
+    name: "Console Task CRUD"
+    phase: phase1
+    status: complete
+    spec: specs/features/step-1-console-todo.md
+    implementation: backend/console/src/hackathon_todo/
+    tests: backend/console/tests/
+    description: "Basic task management via console interface (Add, View, Update, Delete, Mark Complete)"
+
+  # Phase 2 features (planned)
+  - id: task-crud-api
+    name: "RESTful Task API"
+    phase: phase2
+    status: planned
+    spec: specs/features/task-crud-api.md
+    api_spec: specs/api/rest-endpoints.md
+    description: "RESTful API for task CRUD operations with user authentication"
+
+  - id: user-authentication
+    name: "User Authentication"
+    phase: phase2
+    status: planned
+    spec: specs/features/user-authentication.md
+    api_spec: specs/api/authentication-api.md
+    description: "Better Auth integration with JWT and OAuth providers"
+
+  - id: web-ui
+    name: "Web User Interface"
+    phase: phase2
+    status: planned
+    spec: specs/features/web-ui.md
+    ui_spec: specs/ui/components.md
+    description: "Next.js frontend with responsive task management UI"
+
+  # Phase 3 features (planned)
+  - id: chatbot-integration
+    name: "AI Chatbot"
+    phase: phase3
+    status: planned
+    description: "OpenAI-powered conversational task assistant"
+
+  - id: openai-agents
+    name: "OpenAI Agents SDK"
+    phase: phase3
+    status: planned
+    description: "Agent-based task automation and intelligent suggestions"
+
+  - id: mcp-integration
+    name: "MCP Integration"
+    phase: phase3
+    status: planned
+    description: "Model Context Protocol for enhanced AI capabilities"
+
+  # Phase 4 features (planned)
+  - id: kubernetes-deployment
+    name: "Kubernetes Deployment"
+    phase: phase4
+    status: planned
+    description: "Container orchestration with Minikube"
+
+  # Phase 5 features (planned)
+  - id: cicd-pipeline
+    name: "CI/CD Pipeline"
+    phase: phase5
+    status: planned
+    description: "Automated testing and deployment via GitHub Actions"
+
+  - id: event-driven-architecture
+    name: "Event-Driven Architecture"
+    phase: phase5
+    status: planned
+    description: "Kafka + Dapr for asynchronous task processing"
+
+# Development workflow configuration
+workflow:
+  sdd_process:
+    - specify: "Define requirements in specs/<type>/<feature>.md"
+    - plan: "Create implementation plan"
+    - tasks: "Break down into actionable tasks"
+    - implement: "Execute via Claude Code (TDD approach)"
+    - validate: "Verify acceptance criteria"
+
+  quality_gates:
+    test_coverage_min: 90
+    type_checking: strict
+    linting: enabled
+    security_scanning: enabled
+
+# Environment configuration
+environments:
+  development:
+    backend_url: "http://localhost:8000"
+    frontend_url: "http://localhost:3000"
+    database_url: "postgresql://localhost:5432/hackathon_todo_dev"
+
+  production:
+    backend_url: "https://api.hackathon-todo.example.com"
+    frontend_url: "https://hackathon-todo.example.com"
+    database_url: "${NEON_DATABASE_URL}"
+
+# Metadata
+metadata:
+  created: "2026-01-05"
+  last_updated: "2026-01-05"
+  author: "Sami Ullah"
+  repository: "https://github.com/samiullahmalik/hackathon-todo"
+  license: "MIT"
+  tags:
+    - hackathon
+    - spec-driven-development
+    - ai-agents
+    - cloud-native
+    - full-stack

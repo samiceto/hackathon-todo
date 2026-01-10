@@ -1,41 +1,30 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version Change: 1.1.0 → 2.0.0
-Modified Principles: Complete restructuring - Step 1 and Step 2 separated into distinct top-level sections
+Version Change: 1.0.0 → 2.0.0 (MAJOR)
+Modified Principles: None (Step 1 principles unchanged)
 Added Sections:
-  - Top-level "Step 1: Console Todo Application" section
-  - Top-level "Step 2: Full-Stack Web Application" section
-Removed Sections:
-  - Mixed "Core Principles" section (split into Step 1 and Step 2 specific principles)
-  - Mixed "Requirements & Constraints" (now under respective steps)
-Restructuring Rationale:
-  - Clear separation of Step 1 (console app) and Step 2 (web app) governance
-  - All Step 1 content (core principles, requirements, workflow) now under "Step 1" heading
-  - All Step 2 content (technology stack, architecture, security) now under "Step 2" heading
-  - Shared governance principles remain at bottom
+  - Complete "Step 2: Full-Stack Web Application" section
+  - Step 2-specific principles (VIII-XIII)
+  - Step 2 requirements and technology stack
+  - Step 2 workflow and quality gates
+  - JWT authentication architecture
+Removed Sections: None
 Templates Status:
-  ⚠ plan-template.md - validate against new two-tier structure
-  ⚠ spec-template.md - validate step-specific requirements
-  ⚠ tasks-template.md - validate step-specific task types
+  ✅ Constitution updated to v2.0.0
+  ⚠ plan-template.md: No changes required (structure supports both steps)
+  ⚠ spec-template.md: No changes required (user story format applies to both steps)
+  ⚠ tasks-template.md: No changes required (phase organization applies to both steps)
 Follow-up TODOs:
-  - Update templates to reference step-specific principles
-  - Create Step 2 specification document
-  - Update CLAUDE.md with step-aware navigation
-Version Bump Rationale: MAJOR - Backward incompatible restructuring of constitution hierarchy
+  - Step 2 specifications will be created when starting Step 2 work
+  - Backend and frontend CLAUDE.md files exist and reference this constitution
+  - Monorepo structure already prepared in .spec-kit/config.yaml
+Version Bump Rationale: MAJOR bump - Adding Step 2 fundamentally extends project scope from console-only to full-stack web application with authentication, database persistence, and multi-user support. This represents a backward-incompatible expansion of requirements and technology stack.
 -->
 
 # Evolution of Todo - Project Constitution
 
-**Version**: 2.0.0 | **Ratified**: 2025-12-31 | **Last Amended**: 2026-01-01
-
-This constitution governs the Evolution of Todo hackathon project across all five implementation steps. Each step builds upon the previous, maintaining core spec-driven development principles while introducing new technologies and architectural patterns.
-
----
-
-# Step 1: Console Todo Application
-
-## Core Principles
+## Core Principles (Applicable to All Steps)
 
 ### I. Spec-Driven Development (NON-NEGOTIABLE)
 
@@ -63,96 +52,100 @@ This constitution governs the Evolution of Todo hackathon project across all fiv
 
 ### III. Clean Architecture & Project Structure
 
-**Python projects MUST follow standard package structure and clean code principles.**
+**Projects MUST follow standard structure and clean code principles appropriate to the technology stack.**
 
-Required structure:
+Monorepo structure (all steps):
 ```
 hackathon-todo/
+├── .spec-kit/
+│   ├── config.yaml          # Monorepo configuration
+│   └── memory/
+│       └── constitution.md  # This file
 ├── .specify/
-│   ├── memory/
-│   │   └── constitution.md
+│   ├── memory/              # Symlink to .spec-kit/memory
 │   └── templates/
 ├── specs/
-│   └── <feature-name>/
-│       ├── spec.md
-│       ├── plan.md
-│       └── tasks.md
+│   ├── features/            # Feature specifications
+│   ├── api/                 # API endpoint specs
+│   ├── database/            # Database schema specs
+│   └── ui/                  # UI component specs
 ├── history/
 │   └── prompts/
 │       ├── constitution/
 │       ├── <feature-name>/
 │       └── general/
-├── src/
-│   └── hackathon_todo/
-│       ├── __init__.py
-│       ├── models.py
-│       ├── storage.py
-│       ├── ui.py
-│       └── main.py
-├── tests/
-│   └── test_*.py
+├── backend/
+│   ├── console/             # Step 1: Console app
+│   └── api/                 # Step 2: FastAPI backend
+├── frontend/                # Step 2: Next.js frontend
 ├── README.md
-├── CLAUDE.md
-└── pyproject.toml
+└── CLAUDE.md               # Root context (navigation guide)
 ```
 
-- Use UV for Python package and project management
-- Source code MUST reside in `src/` directory with proper package structure
-- Separation of concerns: models, storage, UI, and application logic MUST be in separate modules
-- No god objects or monolithic files - maximum 300 lines per module recommended
+**Design Principles**:
+- Clear separation of concerns (models, services, UI, storage)
+- No circular dependencies
+- Each layer depends only on layers below it
+- Testable in isolation
+- Maximum 300 lines per module recommended
 
-**Rationale**: Professional project structure enables maintainability, testability, and prepares for future phases (web APIs, deployment).
+**Rationale**: Professional project structure enables maintainability, testability, and prepares for future phases.
 
-### IV. In-Memory Storage Pattern
-
-**Step 1 uses in-memory data structures; persistence is explicitly out of scope.**
-
-- Tasks MUST be stored in Python data structures (dictionaries, lists, dataclasses)
-- Data lifetime is session-based - loss on program exit is acceptable and expected
-- Storage layer MUST be abstracted to facilitate future database migration in Step 2
-- Use type hints and dataclasses/Pydantic models for task structure
-
-**Rationale**: Focus on core logic and clean architecture first. Persistence adds complexity that belongs in subsequent phases.
-
-### V. Test-Driven Development
+### IV. Test-Driven Development
 
 **Tests MUST be written and approved before implementation begins.**
 
 - Specifications MUST include concrete test cases and acceptance criteria
-- Test files MUST exist in `tests/` directory using pytest framework
-- Minimum coverage: all five basic features (Add, Delete, Update, View, Mark Complete) MUST have tests
+- Test files MUST use appropriate testing framework for the stack
+- Minimum coverage: all functional requirements MUST have tests
 - Tests MUST fail initially (Red), then pass after implementation (Green)
 - No refactoring without passing tests (Refactor phase)
 
-**Rationale**: TDD ensures requirements are testable and implementation correctness. It's a professional discipline required for all subsequent phases.
+**Rationale**: TDD ensures requirements are testable and implementation correctness. It's a professional discipline required for all phases.
 
-### VI. User Experience Standards
-
-**Console applications MUST provide clear, user-friendly interaction patterns.**
-
-- Interactive menu-driven interface OR command-based interface (not both in Step 1)
-- Clear prompts and instructions for all operations
-- Input validation with helpful error messages
-- Readable output formatting (table view, clear status indicators)
-- Graceful handling of invalid inputs without crashes
-
-**Rationale**: Even console apps require good UX. This establishes quality standards that persist through cloud deployment phases.
-
-### VII. Documentation & Traceability
+### V. Documentation & Traceability
 
 **All work MUST be documented and traceable for evaluation.**
 
 - README.md MUST include: project overview, setup instructions, usage examples, feature list
-- CLAUDE.md MUST document: Claude Code-specific instructions, project context, development guidelines
+- CLAUDE.md files MUST document: context for Claude Code, project structure, development guidelines
 - Prompt History Records (PHRs) MUST be created for all significant development sessions
 - Constitution, specifications, and implementation MUST be version controlled in Git
 - Commit messages MUST follow conventional commits format
 
 **Rationale**: Hackathon evaluation includes reviewing the development process, not just the final code. Documentation proves spec-driven methodology was followed.
 
-## Requirements & Constraints
+### VI. Human as Tool Strategy
 
-### Functional Requirements (MANDATORY)
+**Claude Code MUST invoke the user for input when human judgment is required.**
+
+**Invocation Triggers**:
+1. **Ambiguous Requirements**: When user intent is unclear, ask 2-3 targeted clarifying questions before proceeding
+2. **Unforeseen Dependencies**: When discovering dependencies not mentioned in the spec, surface them and ask for prioritization
+3. **Architectural Uncertainty**: When multiple valid approaches exist with significant tradeoffs, present options and get user's preference
+4. **Completion Checkpoint**: After completing major milestones, summarize what was done and confirm next steps
+
+**Rationale**: Not all problems can be solved autonomously. Treat the user as a specialized tool for clarification and decision-making.
+
+### VII. Security & Best Practices
+
+**All implementations MUST follow security best practices appropriate to the stack.**
+
+- No hardcoded secrets or tokens; use environment variables and `.env` files
+- Input validation at all boundaries (user input, API requests, external data)
+- Error messages MUST be actionable but not leak sensitive information
+- Authentication and authorization MUST be implemented correctly (Step 2+)
+- SQL injection, XSS, CSRF protections MUST be in place (Step 2+)
+
+**Rationale**: Security is not optional. Building secure systems from the start prevents costly refactoring and protects users.
+
+---
+
+## Step 1: Console Todo Application
+
+### Step 1 Requirements & Constraints
+
+#### Functional Requirements (MANDATORY)
 
 All five Basic Level features MUST be implemented:
 
@@ -164,7 +157,7 @@ All five Basic Level features MUST be implemented:
 
 Intermediate and Advanced features are OUT OF SCOPE for Step 1.
 
-### Technology Constraints (MANDATORY)
+#### Technology Constraints (MANDATORY)
 
 - Python 3.13+ MUST be used
 - UV MUST be used for dependency and project management
@@ -172,14 +165,33 @@ Intermediate and Advanced features are OUT OF SCOPE for Step 1.
 - Spec-Kit Plus MUST be used for specification management
 - Windows users MUST use WSL 2 (Ubuntu 22.04 recommended)
 
-### Non-Functional Requirements
+#### Storage Pattern (Step 1 Specific)
+
+- Tasks MUST be stored in Python data structures (dictionaries, lists, dataclasses)
+- Data lifetime is session-based - loss on program exit is acceptable and expected
+- Storage layer MUST be abstracted to facilitate future database migration in Step 2
+- Use type hints and dataclasses for task structure
+
+**Rationale**: Focus on core logic and clean architecture first. Persistence adds complexity that belongs in subsequent phases.
+
+#### User Experience Standards (Step 1)
+
+- Interactive menu-driven interface OR command-based interface (not both in Step 1)
+- Clear prompts and instructions for all operations
+- Input validation with helpful error messages
+- Readable output formatting (table view, clear status indicators)
+- Graceful handling of invalid inputs without crashes
+
+**Rationale**: Even console apps require good UX. This establishes quality standards that persist through cloud deployment phases.
+
+#### Non-Functional Requirements
 
 - Application MUST run without external dependencies beyond Python standard library (if possible)
 - Startup time MUST be under 2 seconds
 - Operations MUST provide immediate feedback (no perceived latency for in-memory operations)
 - Error messages MUST be actionable and clear
 
-### Explicit Non-Goals (OUT OF SCOPE)
+#### Explicit Non-Goals (OUT OF SCOPE)
 
 - Data persistence (no files, no databases)
 - Web interface (console only)
@@ -189,9 +201,9 @@ Intermediate and Advanced features are OUT OF SCOPE for Step 1.
 - Priorities, tags, categories (reserved for Step 2)
 - Due dates, reminders, recurring tasks (reserved for Step 2/3)
 
-## Development Workflow
+### Step 1 Development Workflow
 
-### Specification Phase
+#### Specification Phase
 
 1. Identify feature or component to implement
 2. Create `specs/<feature-name>/spec.md` with complete requirements
@@ -199,7 +211,7 @@ Intermediate and Advanced features are OUT OF SCOPE for Step 1.
 4. Break down into tasks in `specs/<feature-name>/tasks.md`
 5. Review and refine specifications until clear and unambiguous
 
-### Implementation Phase
+#### Implementation Phase
 
 1. Ensure tests are defined in specification and approved
 2. Use Claude Code to generate implementation from specification
@@ -208,7 +220,7 @@ Intermediate and Advanced features are OUT OF SCOPE for Step 1.
 5. Review code quality - use Claude Code to refactor if needed (Refactor)
 6. Create Prompt History Record (PHR) documenting the session
 
-### Validation Phase
+#### Validation Phase
 
 1. Verify all five basic features work correctly
 2. Run complete test suite - all tests MUST pass
@@ -216,20 +228,12 @@ Intermediate and Advanced features are OUT OF SCOPE for Step 1.
 4. Review project structure matches constitution requirements
 5. Ensure documentation is complete and accurate
 
-### Submission Preparation
-
-1. Ensure Git repository is public on GitHub
-2. README.md includes setup and usage instructions
-3. Demo video created (under 90 seconds)
-4. All specifications and PHRs committed to repository
-5. Submit via form: https://forms.gle/KMKEKaFUD6ZX4UtY8
-
-## Quality Gates
+### Step 1 Quality Gates
 
 Before moving to Step 2, the following MUST be verified:
 
 - [ ] All five basic features implemented and working
-- [ ] All tests passing
+- [ ] All tests passing (>90% coverage achieved)
 - [ ] Specification documents complete and committed
 - [ ] README.md and CLAUDE.md present and comprehensive
 - [ ] Project structure matches constitutional requirements
@@ -238,377 +242,339 @@ Before moving to Step 2, the following MUST be verified:
 
 ---
 
-# Step 2: Full-Stack Web Application
+## Step 2: Full-Stack Web Application
 
-## Core Principles (Step 2)
+### Step 2 Overview
 
-All Step 1 principles (I-VII) remain in force. Step 2 extends these principles with additional requirements for full-stack web development.
+**Objective**: Using Claude Code and Spec-Kit Plus, transform the console app into a modern multi-user web application with persistent storage.
 
-### VIII. Monorepo Architecture (MANDATORY)
+**Development Approach**: Use the Agentic Dev Stack workflow: Write spec → Generate plan → Break into tasks → Implement via Claude Code. No manual coding allowed.
 
-**Full-stack applications MUST be organized as a monorepo with clear separation of concerns.**
+### Step 2 Principles
 
-- Frontend and backend MUST be in separate directories (`frontend/`, `backend/`)
-- Spec-Kit Plus structure MUST be used (`.spec-kit/config.yaml`)
-- Layered CLAUDE.md files MUST provide context at root, frontend, and backend levels
-- Docker Compose MUST orchestrate all services (frontend, backend, database)
+#### VIII. Multi-User Architecture
 
-**Rationale**: Monorepo enables Claude Code to work in single context, making cross-cutting changes across frontend and backend simultaneously while maintaining clear boundaries.
+**Applications MUST support multiple users with proper data isolation.**
 
-### IX. API-First Design (MANDATORY)
+- Each user MUST only see and modify their own tasks
+- User authentication MUST be implemented using Better Auth
+- JWT tokens MUST be used for stateless authentication between frontend and backend
+- All API endpoints MUST verify authentication and enforce user ownership
+- Database queries MUST filter by authenticated user ID
 
-**All data operations MUST be exposed via RESTful API endpoints before UI implementation.**
+**Rationale**: Multi-user support is fundamental to web applications. Data isolation prevents security vulnerabilities and privacy violations.
 
-- API contracts MUST be specified before implementation
-- API endpoints MUST follow RESTful conventions (GET, POST, PUT, DELETE, PATCH)
-- Request/response models MUST be validated using Pydantic/TypeScript types
-- API MUST be testable independently of frontend
+#### IX. RESTful API Design
 
-**Rationale**: API-first design ensures backend logic is decoupled from UI, enabling independent testing and future mobile/chatbot integrations.
+**Backend MUST expose a RESTful API following standard conventions.**
 
-### X. Security by Design (MANDATORY)
+Required endpoints:
+- `GET /api/{user_id}/tasks` - List all tasks for authenticated user
+- `POST /api/{user_id}/tasks` - Create a new task
+- `GET /api/{user_id}/tasks/{id}` - Get task details
+- `PUT /api/{user_id}/tasks/{id}` - Update a task
+- `DELETE /api/{user_id}/tasks/{id}` - Delete a task
+- `PATCH /api/{user_id}/tasks/{id}/complete` - Toggle completion status
 
-**All multi-user applications MUST implement authentication and user isolation from the start.**
+**API Standards**:
+- Use appropriate HTTP methods (GET, POST, PUT, PATCH, DELETE)
+- Return appropriate status codes (200, 201, 400, 401, 404, 500)
+- Request/response bodies MUST use JSON format
+- Error responses MUST include meaningful error messages
+- All endpoints MUST require valid JWT token in `Authorization: Bearer <token>` header
 
-- JWT-based authentication MUST be implemented (no session-based auth)
-- User data isolation MUST be enforced at database query level
-- Secrets MUST be managed via environment variables (never committed to Git)
-- All API endpoints MUST require valid authentication tokens
+**Rationale**: RESTful APIs are industry standard and enable frontend/backend separation, third-party integrations, and mobile apps.
 
-**Rationale**: Security cannot be retrofitted. Building secure foundations from the start prevents vulnerabilities and data leaks.
+#### X. Database Persistence
 
-## Requirements & Constraints
+**All data MUST be persisted in Neon Serverless PostgreSQL database.**
 
-### Functional Requirements (MANDATORY)
+- Use SQLModel as the ORM (combines SQLAlchemy + Pydantic)
+- Database schema MUST be defined using SQLModel models
+- Migrations MUST be managed (Alembic or similar)
+- Connections MUST use connection pooling
+- Queries MUST be optimized (indexes on foreign keys, avoid N+1)
+- Environment variables MUST store database connection strings
 
-All five Basic Level features MUST be implemented as a web application:
+**Rationale**: Persistent storage is essential for web applications. Neon provides serverless PostgreSQL with automatic scaling and backups.
 
-1. **Add Task** - Create new todo items via web interface and REST API
-2. **Delete Task** - Remove tasks via API endpoint
-3. **Update Task** - Modify task details through web forms and API
-4. **View Task List** - Display tasks in responsive web interface
-5. **Mark as Complete** - Toggle completion status via API endpoint
+#### XI. Frontend-Backend Separation
 
-Multi-user support is NOW IN SCOPE:
+**Frontend and backend MUST be separate applications with clear boundaries.**
 
-6. **User Authentication** - Signup and signin using Better Auth
-7. **User Isolation** - Each user sees only their own tasks
-8. **Session Management** - JWT-based stateless authentication
+- Frontend (Next.js 16+) runs on port 3000 (default)
+- Backend (FastAPI) runs on port 8000 (default)
+- Communication via HTTP REST API only
+- CORS MUST be configured to allow frontend origin
+- Frontend MUST store JWT token (localStorage or httpOnly cookie)
+- Frontend MUST attach token to every API request
 
-### Technology Stack (MANDATORY)
+**Rationale**: Separation enables independent deployment, scaling, and technology choices. Modern web applications use this pattern.
 
-The following technology stack MUST be used for Step 2:
+#### XII. JWT Authentication Flow
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | Next.js 16+ (App Router) | Modern React framework with SSR |
-| Backend | Python FastAPI | High-performance async API server |
-| ORM | SQLModel | Type-safe database operations |
-| Database | Neon Serverless PostgreSQL | Cloud-native persistent storage |
-| Authentication | Better Auth | JWT-based authentication library |
-| Spec-Driven | Claude Code + Spec-Kit Plus | AI-powered development workflow |
-| Containerization | Docker | Development environment consistency |
+**Better Auth + FastAPI integration MUST follow secure token-based authentication.**
 
-**Technology Constraints**:
-- Next.js MUST use App Router (NOT Pages Router)
-- FastAPI MUST use async/await patterns
-- Database MUST be Neon Serverless PostgreSQL (NOT local PostgreSQL)
-- Authentication MUST use Better Auth with JWT tokens
-- All code generation MUST be via Claude Code from specifications
+**Authentication Flow**:
+1. User logs in on Frontend → Better Auth creates session and issues JWT token
+2. Frontend stores JWT token securely (httpOnly cookie recommended)
+3. Frontend makes API call → Includes JWT token in `Authorization: Bearer <token>` header
+4. Backend receives request → Extracts token from header, verifies signature using shared secret
+5. Backend identifies user → Decodes token to get user ID, email, etc.
+6. Backend filters data → Returns only tasks belonging to that authenticated user
 
-### Architecture Patterns (MANDATORY)
+**Implementation Requirements**:
+- Better Auth MUST be configured with JWT plugin enabled
+- Both frontend and backend MUST share the same `BETTER_AUTH_SECRET` environment variable
+- Backend MUST implement JWT verification middleware (using PyJWT or similar)
+- Tokens MUST have expiration time (7 days recommended)
+- Invalid/expired tokens MUST return 401 Unauthorized
 
-#### Monorepo Organization
+**Security Benefits**:
+- User Isolation: Each user only sees their own tasks
+- Stateless Auth: Backend doesn't need to call frontend to verify users
+- Token Expiry: JWTs expire automatically
+- No Shared DB Session: Frontend and backend can verify auth independently
 
-Project MUST be organized as a monorepo with Spec-Kit Plus structure:
+**Rationale**: JWT tokens provide secure, scalable, stateless authentication. This is industry standard for modern web APIs.
+
+#### XIII. Responsive UI Design
+
+**Frontend MUST provide responsive, user-friendly interface.**
+
+- UI MUST work on desktop and mobile devices
+- Use modern CSS framework (Tailwind CSS recommended)
+- Forms MUST have validation and error feedback
+- Loading states MUST be shown during API calls
+- Success/error messages MUST be displayed to user
+- UI MUST match or exceed console app functionality
+
+**Rationale**: Web applications must work across devices. Good UX increases user satisfaction and adoption.
+
+### Step 2 Requirements & Constraints
+
+#### Functional Requirements (MANDATORY)
+
+All five Basic Level features MUST be implemented as web application:
+
+1. **Add Task** - Web form to create new todo items
+2. **Delete Task** - Delete button with confirmation
+3. **Update Task** - Edit form to modify task details
+4. **View Task List** - Responsive list view with status indicators
+5. **Mark as Complete** - Toggle checkbox or button
+6. **User Authentication** - Signup and signin pages using Better Auth
+
+#### Technology Stack (MANDATORY)
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16+ (App Router) |
+| Backend | Python FastAPI |
+| ORM | SQLModel |
+| Database | Neon Serverless PostgreSQL |
+| Authentication | Better Auth (frontend) + JWT verification (backend) |
+| Spec-Driven | Claude Code + Spec-Kit Plus |
+
+#### Project Structure (Step 2)
 
 ```
 hackathon-todo/
-├── .spec-kit/
-│   └── config.yaml              # Spec-Kit Plus configuration
-├── .specify/
-│   ├── memory/
-│   │   └── constitution.md      # This file
-│   └── templates/               # SDD templates
-├── specs/
-│   ├── overview.md              # Project overview
-│   ├── architecture.md          # System architecture
-│   ├── features/                # Feature specifications
-│   │   ├── task-crud.md
-│   │   ├── authentication.md
-│   │   └── ...
-│   ├── api/                     # API specifications
-│   │   ├── rest-endpoints.md
-│   │   └── ...
-│   ├── database/                # Database specifications
-│   │   └── schema.md
-│   └── ui/                      # UI specifications
-│       ├── components.md
-│       └── pages.md
-├── history/
-│   └── prompts/                 # Prompt History Records
-├── frontend/
-│   ├── CLAUDE.md                # Frontend-specific guidelines
-│   ├── app/                     # Next.js App Router
-│   ├── components/              # React components
-│   ├── lib/                     # Utilities and API client
-│   ├── public/                  # Static assets
-│   ├── package.json
-│   └── ...
 ├── backend/
-│   ├── CLAUDE.md                # Backend-specific guidelines
-│   ├── main.py                  # FastAPI application entry
-│   ├── models.py                # SQLModel database models
-│   ├── routes/                  # API route handlers
-│   ├── db.py                    # Database connection
-│   ├── auth.py                  # Authentication middleware
-│   ├── pyproject.toml
-│   └── ...
-├── docker-compose.yml           # Multi-service orchestration
-├── CLAUDE.md                    # Root project guidelines
-└── README.md                    # User documentation
+│   ├── console/              # Step 1 (preserved)
+│   │   ├── src/hackathon_todo/
+│   │   ├── tests/
+│   │   └── pyproject.toml
+│   └── api/                  # Step 2 (new)
+│       ├── src/
+│       │   ├── models/       # SQLModel models
+│       │   ├── services/     # Business logic
+│       │   ├── api/          # FastAPI routes
+│       │   └── auth/         # JWT verification
+│       ├── tests/
+│       ├── alembic/          # Database migrations
+│       ├── .env.example
+│       └── pyproject.toml
+├── frontend/                  # Step 2 (new)
+│   ├── src/
+│   │   ├── app/              # Next.js App Router
+│   │   ├── components/       # React components
+│   │   ├── lib/              # API client, auth config
+│   │   └── styles/           # Tailwind CSS
+│   ├── public/
+│   ├── .env.local.example
+│   └── package.json
+├── specs/
+│   ├── features/
+│   │   └── 002-step-2-web-app/
+│   ├── api/                  # API endpoint specs
+│   ├── database/             # Schema specs
+│   └── ui/                   # Component specs
+└── history/prompts/
+    └── 002-step-2-web-app/
 ```
 
-**Rationale**: Monorepo enables Claude Code to work in single context, making cross-cutting changes across frontend and backend simultaneously.
+#### API Endpoints (Step 2 Required)
 
-#### RESTful API Design
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/{user_id}/tasks` | List all tasks | Yes |
+| POST | `/api/{user_id}/tasks` | Create a new task | Yes |
+| GET | `/api/{user_id}/tasks/{id}` | Get task details | Yes |
+| PUT | `/api/{user_id}/tasks/{id}` | Update a task | Yes |
+| DELETE | `/api/{user_id}/tasks/{id}` | Delete a task | Yes |
+| PATCH | `/api/{user_id}/tasks/{id}/complete` | Toggle completion | Yes |
 
-All API endpoints MUST follow RESTful conventions:
+**Authentication Behavior**:
+- All endpoints require valid JWT token
+- Requests without token receive `401 Unauthorized`
+- User ID in URL MUST match authenticated user from JWT
+- Each user only sees/modifies their own tasks
+- Task ownership is enforced on every operation
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/{user_id}/tasks` | List all tasks for user |
-| POST | `/api/{user_id}/tasks` | Create a new task |
-| GET | `/api/{user_id}/tasks/{id}` | Get task details |
-| PUT | `/api/{user_id}/tasks/{id}` | Update a task |
-| DELETE | `/api/{user_id}/tasks/{id}` | Delete a task |
-| PATCH | `/api/{user_id}/tasks/{id}/complete` | Toggle completion |
+#### Environment Variables (Step 2 Required)
 
-**API Conventions**:
-- All routes under `/api/` prefix
-- User ID MUST be in URL path for user isolation
-- Return JSON responses with appropriate HTTP status codes
-- Use Pydantic models for request/response validation
-- Handle errors with HTTPException and proper status codes
-
-#### Database Schema
-
-Database MUST implement the following schema:
-
-**users table** (managed by Better Auth):
-- `id`: string (primary key, UUID)
-- `email`: string (unique, not null)
-- `name`: string
-- `created_at`: timestamp
-
-**tasks table**:
-- `id`: integer (primary key, auto-increment)
-- `user_id`: string (foreign key → users.id, not null)
-- `title`: string (not null, 1-200 characters)
-- `description`: text (nullable, max 1000 characters)
-- `completed`: boolean (default false)
-- `created_at`: timestamp (auto-generated)
-- `updated_at`: timestamp (auto-updated)
-
-**Required Indexes**:
-- `tasks.user_id` (for filtering by user)
-- `tasks.completed` (for status filtering)
-
-### Security Requirements (MANDATORY)
-
-#### JWT-Based Authentication
-
-**Authentication Flow**:
-1. User logs in via Better Auth on frontend → JWT token issued
-2. Frontend stores token securely (httpOnly cookie recommended)
-3. Frontend includes token in all API requests: `Authorization: Bearer <token>`
-4. Backend verifies JWT signature and extracts user information
-5. Backend filters all data by authenticated user ID
-
-**Security Constraints**:
-- JWT secret (`BETTER_AUTH_SECRET`) MUST be shared between frontend and backend
-- Tokens MUST have expiration (recommended: 7 days)
-- All API endpoints MUST require valid JWT token
-- Requests without token MUST receive 401 Unauthorized
-- User ID in URL path MUST match authenticated user from token
-
-**User Isolation**:
-- Each user MUST only see/modify their own tasks
-- Task ownership MUST be enforced on every operation (CREATE, READ, UPDATE, DELETE)
-- Attempting to access another user's tasks MUST return 403 Forbidden
-
-#### Environment Variables
-
-Sensitive configuration MUST use environment variables:
-
-**Frontend** (`.env.local`):
+**Backend (.env)**:
 ```
+DATABASE_URL=postgresql://user:pass@neon-host/db
 BETTER_AUTH_SECRET=<shared-secret>
+CORS_ORIGINS=http://localhost:3000
+```
+
+**Frontend (.env.local)**:
+```
 NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-**Backend** (`.env`):
-```
-DATABASE_URL=postgresql://<neon-connection-string>
 BETTER_AUTH_SECRET=<shared-secret>
-JWT_ALGORITHM=HS256
+BETTER_AUTH_URL=http://localhost:3000
+DATABASE_URL=postgresql://user:pass@neon-host/db  # For Better Auth
 ```
 
-**Security Rules**:
-- NEVER commit `.env` or `.env.local` files to Git
-- Use `.env.example` files to document required variables
-- Rotate secrets regularly in production
-- Use different secrets for development and production
+**Security Requirements**:
+- Secrets MUST NOT be committed to Git
+- Provide `.env.example` and `.env.local.example` files
+- README MUST document required environment variables
 
-### Non-Functional Requirements
-
-#### Performance
+#### Non-Functional Requirements (Step 2)
 
 - API response time MUST be under 200ms for CRUD operations (p95)
-- Frontend page load MUST be under 2 seconds (First Contentful Paint)
-- Database queries MUST use indexes for user filtering
-- Frontend MUST use server components by default (client components only when needed)
+- Frontend initial page load MUST be under 3 seconds
+- Database queries MUST use indexes for user_id lookups
+- Application MUST handle 100 concurrent users
+- HTTPS MUST be used in production (development can use HTTP)
 
-#### Scalability
+#### Explicit Non-Goals (Step 2 - OUT OF SCOPE)
 
-- System MUST handle 100+ concurrent users
-- Database MUST support 10,000+ tasks across all users
-- JWT authentication MUST be stateless (no server-side session storage)
-
-#### Developer Experience
-
-- `docker-compose up` MUST start entire stack (frontend + backend + database)
-- Hot reload MUST work for both frontend and backend
-- Environment variables MUST be documented in `.env.example` files
-- README MUST include setup instructions for new developers
-
-#### Observability
-
-- Backend MUST log all API requests (method, path, user_id, status)
-- Frontend MUST handle API errors gracefully with user-friendly messages
-- Database connection errors MUST be logged and reported
-
-### Explicit Non-Goals (OUT OF SCOPE)
-
-- AI chatbot features (reserved for Step 3)
+- Advanced features (priorities, tags, categories, due dates)
+- Real-time updates (WebSockets, Server-Sent Events)
+- File attachments
+- Task sharing or collaboration
+- Mobile native apps
+- Email notifications
+- Third-party integrations
 - Kubernetes deployment (reserved for Step 4)
-- Advanced cloud deployment with CI/CD (reserved for Step 5)
-- Task priorities, tags, categories, or due dates
-- Task search or filtering beyond basic status
-- Real-time collaboration or WebSocket features
-- Email notifications or reminders
-- Task attachments or file uploads
-- Mobile app or PWA features
 
-## Development Workflow
+### Step 2 Development Workflow
 
-### Spec-Kit Plus Workflow
+#### Specification Phase
 
-1. **Write Specifications** - Create or update specs in `/specs/` directory
-   - Feature specs in `/specs/features/`
-   - API specs in `/specs/api/`
-   - Database specs in `/specs/database/`
-   - UI specs in `/specs/ui/`
+1. Create feature specification in `specs/features/002-step-2-web-app/spec.md`
+2. Document API contracts in `specs/api/`
+3. Design database schema in `specs/database/`
+4. Plan UI components in `specs/ui/`
+5. Generate implementation plan in `specs/features/002-step-2-web-app/plan.md`
+6. Break down into tasks in `specs/features/002-step-2-web-app/tasks.md`
 
-2. **Generate Plan** - Use Claude Code to create implementation plan
-   - Reference specs with `@specs/features/<feature>.md`
-   - Plan covers both frontend and backend changes
-   - Identifies database migrations needed
+#### Implementation Phase (Recommended Order)
 
-3. **Break Into Tasks** - Use `/sp.tasks` to generate actionable tasks
-   - Tasks reference specific spec sections
-   - Tasks ordered by dependencies (database → backend → frontend)
-   - Each task has clear acceptance criteria
+1. **Database Setup**
+   - Create Neon database
+   - Define SQLModel models
+   - Setup Alembic migrations
+   - Test database connection
 
-4. **Implement via Claude Code** - Execute tasks using AI generation
-   - Claude Code reads root CLAUDE.md, feature specs, and module-specific CLAUDE.md
-   - Generates code for frontend and backend in single context
-   - Creates database migrations using SQLModel
+2. **Backend API**
+   - Implement FastAPI application structure
+   - Create JWT verification middleware
+   - Implement CRUD endpoints
+   - Add CORS configuration
+   - Write API tests
 
-5. **Test and Iterate** - Validate implementation against spec
-   - Run frontend tests: `cd frontend && npm test`
-   - Run backend tests: `cd backend && pytest`
-   - Update specs if requirements change, regenerate code
+3. **Frontend Authentication**
+   - Setup Better Auth with JWT plugin
+   - Create signup/signin pages
+   - Implement auth context/provider
+   - Store and manage JWT tokens
 
-6. **Create PHR** - Document development session
-   - Capture prompts used and iterations made
-   - Store in `/history/prompts/<feature-name>/`
-   - Include spec changes and rationale
+4. **Frontend UI**
+   - Create task list component
+   - Create task form (add/edit)
+   - Implement API client with auth headers
+   - Add loading/error states
+   - Style with Tailwind CSS
 
-### CLAUDE.md Layering
+5. **Integration Testing**
+   - Test end-to-end user flows
+   - Verify authentication flow
+   - Verify data isolation between users
+   - Test error handling
 
-Three levels of CLAUDE.md files provide context:
+6. **Documentation**
+   - Update README with setup instructions
+   - Document API endpoints
+   - Create deployment guide
+   - Update PHRs
 
-**Root CLAUDE.md**:
-- Project overview and monorepo structure
-- How to reference specs (`@specs/features/...`)
-- Links to frontend and backend CLAUDE.md
-- Development workflow instructions
+#### Validation Phase
 
-**Frontend CLAUDE.md** (`frontend/CLAUDE.md`):
-- Next.js 16+ App Router patterns
-- Component structure and naming conventions
-- API client usage (`/lib/api.ts`)
-- Styling with Tailwind CSS
-- Better Auth integration
+1. All five features work in web interface
+2. Authentication works correctly (signup, signin, logout)
+3. Users can only see their own tasks
+4. All API endpoints return correct responses
+5. All tests passing (unit + integration)
+6. Database migrations work correctly
+7. Documentation complete
 
-**Backend CLAUDE.md** (`backend/CLAUDE.md`):
-- FastAPI project structure
-- SQLModel patterns and conventions
-- Database connection and migrations
-- JWT authentication middleware
-- Error handling and validation
-
-**Rationale**: Layered CLAUDE.md enables Claude Code to understand context at appropriate granularity.
-
-## Quality Gates
+### Step 2 Quality Gates
 
 Before moving to Step 3, the following MUST be verified:
 
-- [ ] All five basic features work in web interface
-- [ ] User authentication (signup/signin) functional with Better Auth
-- [ ] JWT tokens issued and verified correctly
-- [ ] User isolation enforced - users only see their own tasks
+- [ ] All five basic features implemented in web UI
+- [ ] User authentication working (Better Auth + JWT)
 - [ ] All API endpoints implemented and tested
-- [ ] Frontend responsive on desktop and mobile
-- [ ] Database schema deployed to Neon PostgreSQL
-- [ ] Docker Compose starts entire stack successfully
-- [ ] Frontend tests passing (`npm test`)
-- [ ] Backend tests passing (`pytest` with >80% coverage)
-- [ ] Environment variables documented in `.env.example`
-- [ ] Specifications complete in `/specs/` directory
-- [ ] PHRs created for major development sessions
-- [ ] Root, frontend, and backend CLAUDE.md files present
-- [ ] README updated with Step 2 setup instructions
+- [ ] Data persists in Neon PostgreSQL database
+- [ ] Users can only access their own tasks (data isolation verified)
+- [ ] Responsive UI works on desktop and mobile
+- [ ] All tests passing (>90% coverage for new code)
+- [ ] Environment variables documented
+- [ ] Setup instructions in README work for new users
 - [ ] Code generated by Claude Code (no manual implementation)
+- [ ] PHRs created for all major development sessions
+- [ ] Step 1 console app still works (not broken by Step 2 changes)
 
 ---
 
-# Governance (All Steps)
+## Governance
 
-## Constitution Authority
+### Constitution Authority
 
-- This constitution supersedes all other practices and preferences for all steps
-- All specifications MUST verify compliance with step-specific principles
+- This constitution supersedes all other practices and preferences
+- All specifications MUST verify compliance with these principles
 - All generated code MUST be validated against these standards
 - Non-compliance requires specification revision and regeneration
 
-## Amendment Process
+### Amendment Process
 
 - Constitution amendments MUST be versioned using semantic versioning (MAJOR.MINOR.PATCH)
-- MAJOR: Backward incompatible principle changes, removals, or structural reorganization
-- MINOR: New principles added or material expansions
+- MAJOR: Backward incompatible principle changes or removals, or addition of new project steps/phases
+- MINOR: New principles added or material expansions within existing step
 - PATCH: Clarifications, typo fixes, non-semantic refinements
-- All amendments MUST update dependent templates (spec, plan, tasks)
+- All amendments MUST update dependent templates (spec, plan, tasks) if necessary
 - Amendment rationale MUST be documented in sync impact report
 
-## Compliance Review
+### Compliance Review
 
-- Self-review against this constitution MUST occur before submission
+- Self-review against this constitution MUST occur before submission of each step
 - Peer review recommended but not required
 - Judges will evaluate specification quality and iteration process
 - Live presentation (if invited) MUST demonstrate spec-driven workflow
 
----
-
-**Version**: 2.0.0 | **Ratified**: 2025-12-31 | **Last Amended**: 2026-01-01
+**Version**: 2.0.0 | **Ratified**: 2025-12-31 | **Last Amended**: 2026-01-07

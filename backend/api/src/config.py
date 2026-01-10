@@ -2,10 +2,44 @@
 
 Loads environment variables and provides typed settings for the application.
 """
-from typing import List
-from pydantic import PostgresDsn, field_validator
+from typing import List, Union
+from pydantic import PostgresDsn, field_validator, BeforeValidator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import Annotated
 import json
+
+
+def parse_cors_origins(v: str | List[str] | None) -> List[str]:
+    """Parse CORS_ORIGINS from various formats.
+
+    Handles:
+    - JSON array string: '["http://localhost:3000"]'
+    - Comma-separated string: 'http://localhost:3000,https://example.com'
+    - Python list: ["http://localhost:3000"]
+    - Empty/None: returns default ["http://localhost:3000"]
+    """
+    # Handle None or empty string - return default
+    if v is None or v == "":
+        return ["http://localhost:3000"]
+
+    if isinstance(v, str):
+        # Remove any whitespace
+        v = v.strip()
+
+        # Empty after stripping
+        if not v:
+            return ["http://localhost:3000"]
+
+        # Try parsing as JSON array
+        try:
+            return json.loads(v)
+        except json.JSONDecodeError:
+            # Fallback: split by comma and filter empty strings
+            origins = [origin.strip() for origin in v.split(",")]
+            return [o for o in origins if o]
+
+    # Already a list
+    return v
 
 
 class Settings(BaseSettings):
@@ -25,7 +59,7 @@ class Settings(BaseSettings):
     BETTER_AUTH_SECRET: str
 
     # CORS configuration
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: Annotated[List[str], BeforeValidator(parse_cors_origins)] = ["http://localhost:3000"]
 
     # Application environment
     DEBUG: bool = True
@@ -40,23 +74,6 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore"
     )
-
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v: str | List[str]) -> List[str]:
-        """Parse CORS_ORIGINS from JSON string or list.
-
-        Allows CORS_ORIGINS to be specified as:
-        - JSON array string: '["http://localhost:3000"]'
-        - Python list: ["http://localhost:3000"]
-        """
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                # Fallback: split by comma
-                return [origin.strip() for origin in v.split(",")]
-        return v
 
     @field_validator("BETTER_AUTH_SECRET")
     @classmethod

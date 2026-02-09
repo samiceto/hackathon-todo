@@ -1,21 +1,29 @@
 /**
- * TaskItem Component - Phase 7 Enhanced
+ * TaskItem Component - Phase 7 Enhanced + Step 5 Enhancements
  *
  * Displays a single task card with delightful completion toggle.
  * Features "Moment of Achievement" micro-interactions that make
  * checking off tasks feel rewarding and satisfying.
+ *
+ * Step 5 Enhancements:
+ * - Priority badge display
+ * - Due date display with countdown
+ * - Recurrence pattern display (RRULE to human-readable)
+ * - Reminder indicator
  */
 
 'use client'
 
 import { useState } from 'react'
 import { Task } from '@/lib/api/tasks'
+import RecurrenceDisplay from './RecurrenceDisplay'
 
 interface TaskItemProps {
   task: Task
   onToggleComplete?: (taskId: number) => void
   onEdit?: (taskId: number) => void
   onDelete?: (taskId: number) => void
+  searchQuery?: string // Step 5: Search query for highlighting
 }
 
 export default function TaskItem({
@@ -23,9 +31,54 @@ export default function TaskItem({
   onToggleComplete,
   onEdit,
   onDelete,
+  searchQuery,
 }: TaskItemProps) {
   const [isToggling, setIsToggling] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
+
+  /**
+   * Highlight matching search terms in text
+   * @param text - Text to highlight
+   * @param query - Search query
+   * @returns JSX with highlighted matches
+   */
+  const highlightText = (text: string, query?: string) => {
+    if (!query || !query.trim()) {
+      return <span>{text}</span>
+    }
+
+    // Split query into words
+    const searchWords = query.trim().split(/\s+/)
+
+    // Create regex pattern for highlighting (case-insensitive)
+    const pattern = searchWords.map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+    const regex = new RegExp(`(${pattern})`, 'gi')
+
+    // Split text by matches
+    const parts = text.split(regex)
+
+    return (
+      <span>
+        {parts.map((part, index) => {
+          // Check if this part matches the search query
+          const isMatch = searchWords.some(word =>
+            part.toLowerCase() === word.toLowerCase()
+          )
+
+          return isMatch ? (
+            <mark
+              key={index}
+              className="bg-yellow-200 dark:bg-yellow-800 text-gray-900 dark:text-gray-100 rounded px-0.5"
+            >
+              {part}
+            </mark>
+          ) : (
+            <span key={index}>{part}</span>
+          )
+        })}
+      </span>
+    )
+  }
 
   const handleToggle = async () => {
     if (isToggling) return
@@ -63,6 +116,68 @@ export default function TaskItem({
       day: 'numeric',
       year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
     })
+  }
+
+  // Step 5: Format due date with countdown
+  const formatDueDate = (dueDateString: string) => {
+    const dueDate = new Date(dueDateString)
+    const now = new Date()
+    const diffMs = dueDate.getTime() - now.getTime()
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    // Past due
+    if (diffMs < 0) {
+      const overdueDays = Math.abs(diffDays)
+      return {
+        text: overdueDays === 0 ? 'Overdue' : `Overdue ${overdueDays}d`,
+        color: 'text-red-600',
+        bgColor: 'bg-red-50',
+        borderColor: 'border-red-200',
+      }
+    }
+
+    // Due today
+    if (diffDays === 0) {
+      return {
+        text: diffHours <= 1 ? 'Due now' : `Due in ${diffHours}h`,
+        color: 'text-orange-600',
+        bgColor: 'bg-orange-50',
+        borderColor: 'border-orange-200',
+      }
+    }
+
+    // Due soon (within 7 days)
+    if (diffDays <= 7) {
+      return {
+        text: `Due in ${diffDays}d`,
+        color: 'text-yellow-600',
+        bgColor: 'bg-yellow-50',
+        borderColor: 'border-yellow-200',
+      }
+    }
+
+    // Due later
+    return {
+      text: dueDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      }),
+      color: 'text-gray-600',
+      bgColor: 'bg-gray-50',
+      borderColor: 'border-gray-200',
+    }
+  }
+
+  // Step 5: Get priority badge styling
+  const getPriorityBadge = (priority: string) => {
+    const priorityConfig: Record<string, { label: string; color: string; bgColor: string; borderColor: string }> = {
+      urgent: { label: 'Urgent', color: 'text-red-700', bgColor: 'bg-red-100', borderColor: 'border-red-300' },
+      high: { label: 'High', color: 'text-orange-700', bgColor: 'bg-orange-100', borderColor: 'border-orange-300' },
+      medium: { label: 'Medium', color: 'text-blue-700', bgColor: 'bg-blue-100', borderColor: 'border-blue-300' },
+      low: { label: 'Low', color: 'text-gray-700', bgColor: 'bg-gray-100', borderColor: 'border-gray-300' },
+    }
+    return priorityConfig[priority] || priorityConfig.medium
   }
 
   return (
@@ -156,7 +271,7 @@ export default function TaskItem({
 
           {/* Task Content */}
           <div className="flex-1 min-w-0">
-            {/* Title with Smooth Transition */}
+            {/* Title with Smooth Transition and Search Highlighting */}
             <h3
               className={`
                 text-base sm:text-lg font-semibold mb-1.5
@@ -168,10 +283,10 @@ export default function TaskItem({
                 }
               `}
             >
-              {task.title}
+              {highlightText(task.title, searchQuery)}
             </h3>
 
-            {/* Description with Fade Transition */}
+            {/* Description with Fade Transition and Search Highlighting */}
             {task.description && (
               <p
                 className={`
@@ -180,12 +295,13 @@ export default function TaskItem({
                   ${task.completed ? 'text-emerald-600/70' : 'text-gray-600'}
                 `}
               >
-                {task.description}
+                {highlightText(task.description, searchQuery)}
               </p>
             )}
 
-            {/* Metadata with Enhanced Completed Badge */}
-            <div className="flex items-center gap-3 text-xs">
+            {/* Metadata with Enhanced Completed Badge and Step 5 Fields */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {/* Created date */}
               <span className={`flex items-center gap-1 ${task.completed ? 'text-emerald-600' : 'text-gray-500'} transition-colors duration-300`}>
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -198,6 +314,50 @@ export default function TaskItem({
                 {formatDate(task.created_at)}
               </span>
 
+              {/* Step 5: Priority badge */}
+              {task.priority && task.priority !== 'medium' && (
+                <span className={`
+                  inline-flex items-center gap-1
+                  px-2 py-0.5
+                  ${getPriorityBadge(task.priority).bgColor}
+                  ${getPriorityBadge(task.priority).color}
+                  font-medium
+                  rounded-md
+                  border ${getPriorityBadge(task.priority).borderColor}
+                `}>
+                  {getPriorityBadge(task.priority).label}
+                </span>
+              )}
+
+              {/* Step 5: Due date badge */}
+              {task.due_date && (
+                <span className={`
+                  inline-flex items-center gap-1
+                  px-2 py-0.5
+                  ${formatDueDate(task.due_date).bgColor}
+                  ${formatDueDate(task.due_date).color}
+                  font-medium
+                  rounded-md
+                  border ${formatDueDate(task.due_date).borderColor}
+                `}>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {formatDueDate(task.due_date).text}
+                </span>
+              )}
+
+              {/* Step 5: Reminder indicator */}
+              {task.reminder_offset && task.due_date && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 font-medium rounded-md border border-purple-200" title={`Reminder ${task.reminder_offset} minutes before due date`}>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  Reminder
+                </span>
+              )}
+
+              {/* Completed badge */}
               {task.completed && (
                 <span className="
                   inline-flex items-center gap-1.5
@@ -220,6 +380,41 @@ export default function TaskItem({
                 </span>
               )}
             </div>
+
+            {/* Step 5: Recurrence pattern display */}
+            {task.recurrence_rule && (
+              <div className="mt-2">
+                <RecurrenceDisplay recurrenceRule={task.recurrence_rule} />
+              </div>
+            )}
+
+            {/* Step 5: Tags display */}
+            {task.tags && task.tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {task.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="
+                      inline-flex items-center gap-1 px-2 py-0.5
+                      bg-blue-50 dark:bg-blue-900/20
+                      text-blue-700 dark:text-blue-300
+                      text-xs font-medium rounded-md
+                      border border-blue-200 dark:border-blue-800
+                    "
+                  >
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                      />
+                    </svg>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Action Buttons (future - edit/delete) */}

@@ -15,6 +15,7 @@ interface TaskListProps {
   onEdit?: (taskId: number) => void
   onDelete?: (taskId: number) => void
   onAddTask?: () => void
+  searchQuery?: string // Step 5: Search query for highlighting
 }
 
 type FilterMode = 'all' | 'active' | 'completed'
@@ -25,6 +26,7 @@ export default function TaskList({
   onEdit,
   onDelete,
   onAddTask,
+  searchQuery,
 }: TaskListProps) {
   const [filter, setFilter] = useState<FilterMode>('all')
 
@@ -117,6 +119,7 @@ export default function TaskList({
               onToggleComplete={onToggleComplete}
               onEdit={onEdit}
               onDelete={onDelete}
+              searchQuery={searchQuery}
             />
           ))}
         </div>

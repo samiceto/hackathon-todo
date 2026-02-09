@@ -1,0 +1,33 @@
+# Frontend Service Specification
+# Feature: 004-k8s-deployment
+# Resource Type: Kubernetes Service
+# Purpose: Expose frontend application to host machine (NodePort for Minikube)
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "todo-app.fullname" . }}-frontend
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  type: {{ .Values.frontend.service.type | default "ClusterIP" }}
+  ports:
+  - port: 3000
+    targetPort: http
+    protocol: TCP
+    name: http
+    {{- if and (eq .Values.frontend.service.type "NodePort") .Values.frontend.service.nodePort }}
+    nodePort: {{ .Values.frontend.service.nodePort }}
+    {{- end }}
+  selector:
+    {{- include "todo-app.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+
+  # Session affinity (optional)
+  sessionAffinity: None
+
+  # IP family policy
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack

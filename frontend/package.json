@@ -1,7 +1,7 @@
 {
   "name": "hackathon-todo-frontend",
-  "version": "0.1.0",
-  "description": "Next.js frontend for Hackathon Todo - Step 2 Full-Stack Web Application",
+  "version": "0.2.0",
+  "description": "Next.js frontend for Hackathon Todo - Steps 2-3: Full-Stack Web Application with AI Chatbot",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -20,7 +20,12 @@
     "better-auth": "^1.0.0",
     "axios": "^1.7.0",
     "clsx": "^2.1.0",
-    "tailwind-merge": "^2.5.0"
+    "tailwind-merge": "^2.5.0",
+    "@openai/chatkit": "^1.3.0",
+    "i18next": "^23.10.0",
+    "react-i18next": "^14.1.0",
+    "i18next-browser-languagedetector": "^7.2.0",
+    "i18next-http-backend": "^2.5.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

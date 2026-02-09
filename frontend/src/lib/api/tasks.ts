@@ -18,6 +18,13 @@ export interface Task {
   completed: boolean
   created_at: string
   updated_at: string
+  // Step 5: Advanced fields
+  priority?: string
+  due_date?: string | null
+  recurrence_rule?: string | null
+  reminder_offset?: number | null
+  next_occurrence?: string | null
+  tags?: string[]
 }
 
 /**
@@ -49,17 +56,40 @@ export interface UpdateTaskData {
  */
 export const taskApi = {
   /**
-   * Get all tasks for the authenticated user.
+   * Get all tasks for the authenticated user with optional search, filter, and sort parameters.
    *
    * @param userId - ID of the user (must match authenticated user)
+   * @param queryParams - Optional query parameters for search, filter, sort
    * @returns Promise<TaskListResponse> - List of tasks with total count
    * @throws ApiClientError - On authentication or network errors
    *
    * @example
+   * // Get all tasks
    * const { tasks, total } = await taskApi.getTasks(userId)
+   *
+   * @example
+   * // Search tasks
+   * const { tasks } = await taskApi.getTasks(userId, { search: 'meeting' })
+   *
+   * @example
+   * // Filter and sort tasks
+   * const { tasks } = await taskApi.getTasks(userId, {
+   *   status: 'incomplete',
+   *   priority: 'high',
+   *   sort_by: 'due_date',
+   *   sort_order: 'asc'
+   * })
    */
-  async getTasks(userId: number): Promise<TaskListResponse> {
-    return apiClient.get<TaskListResponse>(`/api/${userId}/tasks`)
+  async getTasks(userId: number, queryParams?: Record<string, string>): Promise<TaskListResponse> {
+    let url = `/api/${userId}/tasks`
+
+    // Add query parameters if provided
+    if (queryParams && Object.keys(queryParams).length > 0) {
+      const params = new URLSearchParams(queryParams)
+      url += `?${params.toString()}`
+    }
+
+    return apiClient.get<TaskListResponse>(url)
   },
 
   /**

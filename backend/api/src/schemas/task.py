@@ -10,6 +10,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from ..services.recurrence_service import RecurrenceService
+
 
 class TaskBase(BaseModel):
     """Base task schema with common fields"""
@@ -35,6 +37,13 @@ class TaskResponse(BaseModel):
     completed: bool = Field(..., description="Completion status")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
+
+    # Step 5: Advanced task fields
+    priority: str = Field(default="medium", description="Task priority (low, medium, high, urgent)")
+    due_date: Optional[datetime] = Field(None, description="Task due date (optional)")
+    recurrence_rule: Optional[str] = Field(None, description="iCal RRULE format recurrence rule (optional)")
+    reminder_offset: Optional[int] = Field(None, description="Minutes before due_date to send reminder (optional)")
+    next_occurrence: Optional[datetime] = Field(None, description="Next occurrence time for recurring tasks (optional)")
 
     model_config = {"from_attributes": True}
 
@@ -70,6 +79,26 @@ class CreateTaskRequest(BaseModel):
         default="", max_length=5000, description="Task description (optional)"
     )
 
+    # Step 5: Advanced task fields
+    priority: str = Field(
+        default="medium",
+        description="Task priority: low, medium, high, or urgent"
+    )
+    due_date: Optional[datetime] = Field(
+        None,
+        description="Task due date (optional)"
+    )
+    recurrence_rule: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="iCal RRULE format recurrence rule (optional, e.g., 'FREQ=DAILY')"
+    )
+    reminder_offset: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Minutes before due_date to send reminder (optional, must be positive)"
+    )
+
     @field_validator("title")
     @classmethod
     def validate_title_not_empty(cls, v: str) -> str:
@@ -83,6 +112,46 @@ class CreateTaskRequest(BaseModel):
     def strip_description(cls, v: str) -> str:
         """Strip leading/trailing whitespace from description"""
         return v.strip() if v else ""
+
+    @field_validator("priority")
+    @classmethod
+    def validate_priority(cls, v: str) -> str:
+        """Validate priority is one of the allowed values"""
+        allowed_priorities = ["low", "medium", "high", "urgent"]
+        if v not in allowed_priorities:
+            raise ValueError(
+                f"Priority must be one of: {', '.join(allowed_priorities)}"
+            )
+        return v
+
+    @field_validator("recurrence_rule")
+    @classmethod
+    def validate_recurrence_rule(cls, v: Optional[str]) -> Optional[str]:
+        """Validate RRULE format using RecurrenceService"""
+        if v is None:
+            return v
+
+        # Strip whitespace
+        v = v.strip()
+        if not v:
+            return None
+
+        # Validate RRULE format
+        if not RecurrenceService.validate_rrule(v):
+            raise ValueError(
+                "Invalid RRULE format. Must be valid iCal recurrence rule "
+                "(e.g., 'FREQ=DAILY', 'FREQ=WEEKLY;BYDAY=MO')"
+            )
+
+        return v
+
+    @field_validator("reminder_offset")
+    @classmethod
+    def validate_reminder_offset_with_due_date(cls, v: Optional[int], info) -> Optional[int]:
+        """Ensure reminder_offset is only set when due_date is provided"""
+        if v is not None and info.data.get("due_date") is None:
+            raise ValueError("reminder_offset can only be set when due_date is provided")
+        return v
 
 
 class UpdateTaskRequest(BaseModel):
@@ -100,6 +169,26 @@ class UpdateTaskRequest(BaseModel):
         None, max_length=5000, description="Updated task description"
     )
 
+    # Step 5: Advanced task fields
+    priority: Optional[str] = Field(
+        None,
+        description="Updated task priority: low, medium, high, or urgent"
+    )
+    due_date: Optional[datetime] = Field(
+        None,
+        description="Updated task due date"
+    )
+    recurrence_rule: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Updated iCal RRULE format recurrence rule"
+    )
+    reminder_offset: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Updated minutes before due_date to send reminder (must be positive)"
+    )
+
     @field_validator("title")
     @classmethod
     def validate_title_not_empty(cls, v: Optional[str]) -> Optional[str]:
@@ -114,6 +203,48 @@ class UpdateTaskRequest(BaseModel):
         """Strip leading/trailing whitespace from description if provided"""
         return v.strip() if v else v
 
+    @field_validator("priority")
+    @classmethod
+    def validate_priority(cls, v: Optional[str]) -> Optional[str]:
+        """Validate priority is one of the allowed values if provided"""
+        if v is None:
+            return v
+
+        allowed_priorities = ["low", "medium", "high", "urgent"]
+        if v not in allowed_priorities:
+            raise ValueError(
+                f"Priority must be one of: {', '.join(allowed_priorities)}"
+            )
+        return v
+
+    @field_validator("recurrence_rule")
+    @classmethod
+    def validate_recurrence_rule(cls, v: Optional[str]) -> Optional[str]:
+        """Validate RRULE format using RecurrenceService if provided"""
+        if v is None:
+            return v
+
+        # Strip whitespace
+        v = v.strip()
+        if not v:
+            return None
+
+        # Validate RRULE format
+        if not RecurrenceService.validate_rrule(v):
+            raise ValueError(
+                "Invalid RRULE format. Must be valid iCal recurrence rule "
+                "(e.g., 'FREQ=DAILY', 'FREQ=WEEKLY;BYDAY=MO')"
+            )
+
+        return v
+
     def has_updates(self) -> bool:
         """Check if at least one field is being updated"""
-        return self.title is not None or self.description is not None
+        return (
+            self.title is not None
+            or self.description is not None
+            or self.priority is not None
+            or self.due_date is not None
+            or self.recurrence_rule is not None
+            or self.reminder_offset is not None
+        )

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)"
+    ]
+  }
+}

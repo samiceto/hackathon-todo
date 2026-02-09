@@ -1,0 +1,30 @@
+# Backend Service Specification
+# Feature: 004-k8s-deployment
+# Resource Type: Kubernetes Service
+# Purpose: Expose backend API within the cluster (ClusterIP)
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "todo-app.fullname" . }}-backend
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP  # Internal cluster access only
+  ports:
+  - port: 8000
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "todo-app.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+
+  # Session affinity (optional, for stateful operations)
+  sessionAffinity: None
+
+  # IP family policy
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack

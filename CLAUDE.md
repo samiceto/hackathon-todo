@@ -527,9 +527,190 @@ uv sync
 - **specs/architecture.md**: System architecture (future)
 
 ### Current Branch
-- **Name**: `001-step-1-core-features`
-- **Status**: Step 1 complete, monorepo restructuring in progress
+- **Name**: `004-k8s-deployment`
+- **Status**: Step 4 implementation - Phases 5-6 complete (Helm Lifecycle + Health Checks)
 
 ---
 
-**Last Updated**: 2026-01-05 (Monorepo restructuring - Phase 1)
+## Step 4: Kubernetes Deployment Context 🐳
+
+**Status**: IN PROGRESS (Phases 5-6 Complete)
+**Goal**: Deploy full-stack Todo Chatbot to local Kubernetes cluster using Minikube and Helm
+
+### Implementation Progress
+
+- ✅ **Phase 1**: Setup (Minikube + Helm structure)
+- ✅ **Phase 2**: Foundational (Docker images built)
+- ✅ **Phase 3**: User Story 1 (Backend deployed)
+- ✅ **Phase 4**: User Story 2 (Frontend deployed)
+- ✅ **Phase 5**: User Story 3 (Helm lifecycle management) - **JUST COMPLETED**
+- ✅ **Phase 6**: User Story 4 (Health checks + resource limits) - **JUST COMPLETED**
+- ⏳ **Phase 7**: User Story 5 (AI DevOps tools) - SKIPPED (optional)
+- ⏳ **Phase 8**: Polish & validation - IN PROGRESS
+
+### Kubernetes Architecture
+
+**Deployed Components**:
+```
+┌──────────────────────────────────────────────┐
+│  Kubernetes Cluster (Minikube)              │
+│                                              │
+│  ┌────────────────┐  ┌──────────────────┐   │
+│  │ Frontend Pods  │  │  Backend Pods    │   │
+│  │ (Next.js)      │  │  (FastAPI)       │   │
+│  │ Replicas: 1    │  │  Replicas: 1     │   │
+│  │ Port: 3000     │  │  Port: 8000      │   │
+│  └────────┬───────┘  └────────┬─────────┘   │
+│           │                   │              │
+│  ┌────────▼───────┐  ┌───────▼──────────┐   │
+│  │ Frontend Svc   │  │  Backend Svc     │   │
+│  │ NodePort:30000 │  │  ClusterIP:8000  │   │
+│  └────────────────┘  └──────────────────┘   │
+│                                              │
+│  ┌────────────────────────────────────────┐  │
+│  │  ConfigMaps & Secrets                  │  │
+│  │  - Backend config (DB, CORS, logs)     │  │
+│  │  - Backend secrets (API keys)          │  │
+│  │  - Frontend config (API URL)           │  │
+│  └────────────────────────────────────────┘  │
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+          External: Neon PostgreSQL
+          (NOT containerized)
+```
+
+### Docker Images
+
+**Backend (todo-backend:latest)**:
+- **Base**: python:3.13-slim
+- **Build**: Multi-stage build
+- **Size**: ~287MB
+- **Health Check**: /health endpoint
+- **User**: Non-root (uid 1000)
+
+**Frontend (todo-frontend:latest)**:
+- **Base**: node:20-alpine
+- **Build**: Multi-stage build (standalone output)
+- **Size**: ~206MB
+- **Health Check**: / endpoint
+- **User**: Non-root (uid 1001)
+
+### Helm Chart Structure
+
+```
+helm/todo-app/
+├── Chart.yaml                    # v1.0.0, app v4.0.0
+├── values.yaml                   # Production defaults
+├── values-dev.yaml               # Minikube overrides
+├── values-prod.yaml              # Cloud production (Step 5)
+└── templates/
+    ├── _helpers.tpl              # Template functions
+    ├── NOTES.txt                 # Post-install guide
+    ├── backend-deployment.yaml   # Backend Deployment
+    ├── backend-service.yaml      # Backend Service
+    ├── backend-configmap.yaml    # Backend ConfigMap
+    ├── backend-secret.yaml       # Backend Secret
+    ├── frontend-deployment.yaml  # Frontend Deployment
+    ├── frontend-service.yaml     # Frontend Service
+    └── frontend-configmap.yaml   # Frontend ConfigMap
+```
+
+### Key Features Implemented
+
+#### ✅ Rolling Updates (Phase 5)
+- **Strategy**: maxSurge: 1, maxUnavailable: 0
+- **Zero Downtime**: New pod starts before old terminates
+- **Configuration Changes**: Tracked via checksums (auto-restart)
+- **Tested**: Upgrade + rollback workflows verified
+
+#### ✅ Health Checks (Phase 6)
+- **Liveness Probe**: Detects crashed containers, auto-restart
+  - Backend: `GET /health` (30s delay, 10s period, 5s timeout, 3 failures)
+  - Frontend: `GET /` (30s delay, 10s period, 5s timeout, 3 failures)
+- **Readiness Probe**: Controls traffic routing
+  - Backend: `GET /health` (10s delay, 5s period, 3s timeout, 2 failures)
+  - Frontend: `GET /` (10s delay, 5s period, 3s timeout, 2 failures)
+
+#### ✅ Resource Limits (Phase 6)
+- **Backend**: CPU 250m request/500m limit, Memory 256Mi request/512Mi limit
+- **Frontend**: CPU 100m request/200m limit, Memory 128Mi request/256Mi limit
+- **Enforcement**: Kubernetes throttles (CPU) or kills (memory) on limit
+
+#### ✅ Configuration Management
+- **ConfigMaps**: Non-sensitive config (CORS, DB URL, log level)
+- **Secrets**: API keys (OpenAI, Better Auth)
+- **Environment-Specific**: values-dev.yaml vs values-prod.yaml
+
+### Common Kubernetes Commands
+
+```bash
+# Deployment status
+kubectl get pods -l app.kubernetes.io/instance=todo-app
+kubectl get svc
+
+# Logs
+kubectl logs -f -l app.kubernetes.io/component=backend
+kubectl logs -f -l app.kubernetes.io/component=frontend
+
+# Health checks
+kubectl describe pod -l app.kubernetes.io/component=backend | grep -A 10 "Liveness"
+
+# Resource usage (requires metrics-server)
+minikube addons enable metrics-server
+kubectl top pods -l app.kubernetes.io/instance=todo-app
+
+# Port forwarding
+kubectl port-forward svc/todo-app-backend 8000:8000
+kubectl port-forward svc/todo-app-frontend 3000:3000
+
+# Access frontend
+minikube service todo-app-frontend  # Opens browser to NodePort
+
+# Helm operations
+helm list
+helm history todo-app
+helm upgrade todo-app ./helm/todo-app -f helm/todo-app/values-dev.yaml
+helm rollback todo-app
+```
+
+### Troubleshooting
+
+**Pods not starting**:
+```bash
+kubectl describe pod <pod-name>  # Check events
+kubectl logs <pod-name>          # Check logs
+```
+
+**Image pull errors**:
+```bash
+# Ensure Docker environment configured
+eval $(minikube docker-env)
+
+# Verify images exist
+docker images | grep todo
+
+# Rebuild if needed
+docker build -t todo-backend:latest backend/api/
+docker build -t todo-frontend:latest frontend/
+```
+
+**Health check failures**:
+```bash
+# Test manually
+kubectl port-forward svc/todo-app-backend 8000:8000
+curl http://localhost:8000/health
+```
+
+### Next Steps (Phase 8)
+
+- [ ] Update documentation (README.md, CLAUDE.md) ✅ IN PROGRESS
+- [ ] Create troubleshooting guide
+- [ ] Run end-to-end validation
+- [ ] Document metrics (resource usage, startup times)
+- [ ] Test Helm chart portability
+- [ ] Verify all success criteria met
+
+---
+
+**Last Updated**: 2026-01-25 (Step 4 - Phases 5-6 complete: Helm Lifecycle + Health Checks)

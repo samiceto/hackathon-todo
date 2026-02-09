@@ -1,0 +1,9 @@
+# Chat Interface Pages
+
+This directory contains Next.js App Router pages for the AI chatbot interface.
+
+Planned files:
+- page.tsx: Main chat interface page
+- layout.tsx: Chat layout with ChatKit integration
+
+Step 3: AI-Powered Chatbot - Chat Pages

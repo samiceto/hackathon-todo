@@ -5,18 +5,71 @@ Business logic for task-related operations.
 Handles CRUD operations with proper data isolation and validation.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from sqlmodel import Session, select
 
 from ..models.task import Task
 from ..models.user import User
+from ..models.reminder import Reminder
 from ..schemas.task import CreateTaskRequest, UpdateTaskRequest
+from .recurrence_service import RecurrenceService
 
 
 class TaskService:
     """Service for task-related business logic"""
+
+    @staticmethod
+    def _create_or_update_reminder(
+        session: Session, task: Task, user_id: int
+    ) -> Optional[Reminder]:
+        """
+        Create or update reminder for a task if due_date and reminder_offset are set.
+
+        Args:
+            session: Database session
+            task: Task object
+            user_id: ID of the user
+
+        Returns:
+            Reminder object if created/updated, None otherwise
+
+        Note:
+            - Deletes existing unsent reminders for the task
+            - Creates new reminder if due_date and reminder_offset are set
+            - reminder_at = due_date - reminder_offset (minutes)
+        """
+        # Delete existing unsent reminders for this task
+        existing_reminders = session.exec(
+            select(Reminder).where(
+                Reminder.task_id == task.id,
+                Reminder.sent == False
+            )
+        ).all()
+        for reminder in existing_reminders:
+            session.delete(reminder)
+
+        # Create new reminder if conditions are met
+        if task.due_date and task.reminder_offset:
+            # Calculate reminder time: due_date - reminder_offset (minutes)
+            reminder_at = task.due_date - timedelta(minutes=task.reminder_offset)
+
+            # Only create reminder if reminder_at is in the future
+            if reminder_at > datetime.now(timezone.utc):
+                new_reminder = Reminder(
+                    task_id=task.id,
+                    user_id=user_id,
+                    reminder_at=reminder_at,
+                    sent=False,
+                    created_at=datetime.now(timezone.utc),
+                )
+                session.add(new_reminder)
+                session.commit()
+                session.refresh(new_reminder)
+                return new_reminder
+
+        return None
 
     @staticmethod
     def get_all_tasks(session: Session, user_id: int) -> List[Task]:
@@ -88,6 +141,16 @@ class TaskService:
         if not user:
             raise ValueError(f"User with ID {user_id} not found")
 
+        # Calculate next_occurrence if recurrence_rule is provided
+        next_occurrence = None
+        if task_data.recurrence_rule:
+            # Use due_date as start if provided, otherwise use current time
+            start_time = task_data.due_date if task_data.due_date else datetime.now(timezone.utc)
+            next_occurrence = RecurrenceService.calculate_next_occurrence(
+                task_data.recurrence_rule,
+                after=start_time
+            )
+
         # Create new task
         new_task = Task(
             user_id=user_id,
@@ -96,11 +159,20 @@ class TaskService:
             completed=False,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
+            # Step 5: Advanced fields
+            priority=task_data.priority,
+            due_date=task_data.due_date,
+            recurrence_rule=task_data.recurrence_rule,
+            reminder_offset=task_data.reminder_offset,
+            next_occurrence=next_occurrence,
         )
 
         session.add(new_task)
         session.commit()
         session.refresh(new_task)
+
+        # Create reminder if due_date and reminder_offset are set
+        TaskService._create_or_update_reminder(session, new_task, user_id)
 
         return new_task
 
@@ -126,11 +198,15 @@ class TaskService:
         Note:
             Only updates fields that are provided (not None).
             Automatically updates updated_at timestamp.
+            Recalculates next_occurrence if recurrence_rule or due_date changes.
         """
         # Retrieve task with data isolation check
         task = TaskService.get_task_by_id(session, task_id, user_id)
         if not task:
             return None
+
+        # Track if recurrence-related fields changed
+        recurrence_changed = False
 
         # Update only provided fields
         if task_data.title is not None:
@@ -138,12 +214,38 @@ class TaskService:
         if task_data.description is not None:
             task.description = task_data.description
 
+        # Step 5: Update advanced fields
+        if task_data.priority is not None:
+            task.priority = task_data.priority
+        if task_data.due_date is not None:
+            task.due_date = task_data.due_date
+            recurrence_changed = True
+        if task_data.recurrence_rule is not None:
+            task.recurrence_rule = task_data.recurrence_rule
+            recurrence_changed = True
+        if task_data.reminder_offset is not None:
+            task.reminder_offset = task_data.reminder_offset
+
+        # Recalculate next_occurrence if recurrence_rule changed
+        if recurrence_changed and task.recurrence_rule:
+            start_time = task.due_date if task.due_date else datetime.now(timezone.utc)
+            task.next_occurrence = RecurrenceService.calculate_next_occurrence(
+                task.recurrence_rule,
+                after=start_time
+            )
+        elif task_data.recurrence_rule == "":  # Empty string to clear recurrence
+            task.recurrence_rule = None
+            task.next_occurrence = None
+
         # Update timestamp
         task.updated_at = datetime.utcnow()
 
         session.add(task)
         session.commit()
         session.refresh(task)
+
+        # Create or update reminder if due_date and reminder_offset changed
+        TaskService._create_or_update_reminder(session, task, user_id)
 
         return task
 

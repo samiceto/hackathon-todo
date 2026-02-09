@@ -60,3 +60,22 @@ frontend/out/
 frontend/node_modules/
 frontend/.turbo/
 frontend/dist/
+
+# Docker & Kubernetes (Step 4)
+# Don't ignore Dockerfiles themselves, just build artifacts
+*.tar
+*.tar.gz
+
+# Helm secrets (NEVER commit secrets)
+helm/**/secrets.yaml
+helm/**/*-secrets.yaml
+
+# Kubernetes local configs
+.kube/
+kubeconfig*
+*.key
+*.crt
+*.pem
+
+# Minikube
+.minikube-cache/

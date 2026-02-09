@@ -1,0 +1,128 @@
+# Minikube development environment overrides
+# Use with: helm install todo-app ./helm/todo-app -f values-dev.yaml
+
+# Global configuration
+global:
+  environment: development
+
+# Backend configuration overrides
+backend:
+  # Reduce replicas for local development
+  replicas: 1
+
+  # Local image configuration
+  image:
+    repository: todo-backend
+    tag: latest
+    pullPolicy: Never  # Use local images only (built with minikube docker-env)
+
+  # NodePort service for external access (needed for browser-based frontend)
+  service:
+    type: NodePort
+    port: 8000
+    targetPort: 8000
+    nodePort: 30001  # Access backend at http://<minikube-ip>:30001
+
+  # Development configuration
+  config:
+    corsOrigins: "http://localhost:3000,http://localhost:8000"
+    databaseUrl: "postgresql://neondb_owner:npg_QVsP5gmjC4wb@ep-snowy-cell-a4068rur-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+
+    logLevel: "debug"
+
+  # Secrets must be provided via --set flags
+  # Example: --set backend.secrets.openaiApiKey=sk-...
+  secrets:
+    openaiApiKey: ""
+    betterAuthSecret: "uwOPm1ir2FvGcIcJoOGyub2FQPQPysvC"
+
+# Frontend configuration overrides
+frontend:
+  # Reduce replicas for local development
+  replicas: 1
+
+  # Local image configuration
+  image:
+    repository: todo-frontend
+    tag: latest
+    pullPolicy: Never  # Use local images only
+
+  # NodePort service for external access from host machine
+  service:
+    type: NodePort
+    port: 3000
+    targetPort: 3000
+    nodePort: 30000  # Access frontend at http://<minikube-ip>:30000
+
+  # Development configuration
+  config:
+    nextPublicApiUrl: "http://localhost:8000"  # Backend via port-forward (WSL/Windows compatibility)
+    nextPublicOpenaiDomainKey: ""  # Provide if needed
+
+# Ingress disabled for Minikube
+ingress:
+  enabled: false
+
+# Autoscaling disabled for Minikube
+autoscaling:
+  enabled: false
+
+# Pod disruption budget disabled for Minikube
+podDisruptionBudget:
+  enabled: false
+
+# Dapr configuration for Minikube development (T086)
+dapr:
+  enabled: true
+
+  # Pub/Sub component configuration (Kafka/Redpanda)
+  pubsub:
+    name: pubsub-kafka
+    type: pubsub.kafka
+    version: v1
+    metadata:
+      - name: brokers
+        value: "redpanda:9092"  # Local Redpanda broker for Minikube
+      - name: authType
+        value: "none"  # No authentication for local development
+      - name: consumerGroup
+        value: "todo-app-group"
+      - name: clientID
+        value: "todo-app-client"
+
+  # State Store component configuration (Redis)
+  statestore:
+    name: statestore-redis
+    type: state.redis
+    version: v1
+    metadata:
+      - name: redisHost
+        value: "redis-master:6379"  # Local Redis for Minikube
+      - name: redisPassword
+        secretKeyRef:
+          name: redis
+          key: redis-password
+      - name: actorStateStore
+        value: "true"
+
+  # Cron Binding component configuration
+  cronBinding:
+    name: cron-reminder-processor
+    type: bindings.cron
+    version: v1
+    metadata:
+      - name: schedule
+        value: "*/1 * * * *"  # Every 1 minute
+      - name: direction
+        value: "input"
+
+  # Secrets Store component configuration (Kubernetes Secrets)
+  secrets:
+    name: kubernetes-secrets
+    type: secretstores.kubernetes
+    version: v1
+    metadata:
+      - name: vaultName
+        value: ""  # Not used for Kubernetes secrets
+      - name: defaultNamespace
+        value: "default"  # Kubernetes namespace for secrets

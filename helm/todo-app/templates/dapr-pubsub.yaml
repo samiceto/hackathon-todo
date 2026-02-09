@@ -1,0 +1,73 @@
+{{- if .Values.dapr.enabled }}
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub-kafka
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    # Kafka broker addresses
+    - name: brokers
+      value: {{ .Values.kafka.brokers | quote }}
+
+    # Consumer group ID
+    - name: consumerGroup
+      value: {{ .Values.kafka.consumerGroup | default "todo-app-consumers" | quote }}
+
+    {{- if .Values.kafka.auth.enabled }}
+    # Authentication (SASL for cloud Kafka)
+    - name: authType
+      value: {{ .Values.kafka.auth.type | default "password" | quote }}
+
+    - name: saslUsername
+      secretKeyRef:
+        name: {{ .Values.kafka.auth.secretName | default "kafka-credentials" }}
+        key: {{ .Values.kafka.auth.usernameKey | default "username" }}
+
+    - name: saslPassword
+      secretKeyRef:
+        name: {{ .Values.kafka.auth.secretName | default "kafka-credentials" }}
+        key: {{ .Values.kafka.auth.passwordKey | default "password" }}
+
+    - name: saslMechanism
+      value: {{ .Values.kafka.auth.mechanism | default "SCRAM-SHA-256" | quote }}
+
+    # TLS/SSL settings (for cloud Kafka)
+    - name: enableTLS
+      value: {{ .Values.kafka.tls.enabled | default "true" | quote }}
+    {{- else }}
+    # No authentication (for local Redpanda)
+    - name: authType
+      value: "none"
+    {{- end }}
+
+    # Topic creation settings
+    - name: initialOffset
+      value: {{ .Values.kafka.initialOffset | default "oldest" | quote }}
+
+    # Message delivery settings
+    - name: maxMessageBytes
+      value: {{ .Values.kafka.maxMessageBytes | default "1048576" | quote }}
+
+    # Consumer settings
+    - name: sessionTimeout
+      value: {{ .Values.kafka.sessionTimeout | default "6000" | quote }}
+
+    # Producer settings
+    - name: producerAcks
+      value: {{ .Values.kafka.producerAcks | default "all" | quote }}
+    {{- if .Values.kafka.producerIdempotent }}
+    - name: producerIdempotent
+      value: "true"
+    {{- end }}
+
+  # Scope to specific apps (backend and reminder-service)
+  scopes:
+    - backend
+    - reminder-service
+{{- end }}

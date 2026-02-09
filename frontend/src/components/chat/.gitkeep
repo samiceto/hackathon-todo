@@ -1,0 +1,11 @@
+# Chat UI Components
+
+This directory contains React components for the AI chatbot interface using OpenAI ChatKit.
+
+Planned components:
+- ChatInterface.tsx: Main ChatKit wrapper component
+- MessageList.tsx: Conversation message display
+- ChatInput.tsx: Message input field
+- ConversationHistory.tsx: Past conversations sidebar
+
+Step 3: AI-Powered Chatbot - Chat Components

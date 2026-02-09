@@ -7,12 +7,16 @@
  * Displays task list with filtering, loading states, and error handling.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import authClient from '@/lib/auth/auth-client'
 import { taskApi, Task } from '@/lib/api/tasks'
 import TaskList from '@/components/tasks/TaskList'
-import TaskForm from '@/components/tasks/TaskForm'
+import TaskForm, { TaskFormData } from '@/components/tasks/TaskForm'
+import SearchBar from '@/components/tasks/SearchBar'
+import FilterPanel, { FilterOptions } from '@/components/tasks/FilterPanel'
+import SortControls, { SortOptions } from '@/components/tasks/SortControls'
 import Loading from '@/components/ui/Loading'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import DeleteConfirm from '@/components/tasks/DeleteConfirm'
@@ -31,33 +35,74 @@ export default function TasksPage() {
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Fetch tasks on mount
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        // Get current user from token
-        const currentUser = authClient.getCurrentUser()
-        if (!currentUser) {
-          router.push('/signin')
-          return
-        }
+  // Step 5: Search, Filter, Sort state
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [filters, setFilters] = useState<FilterOptions>({})
+  const [sortOptions, setSortOptions] = useState<SortOptions>({ sortBy: null, sortOrder: 'desc' })
+  const [showFilters, setShowFilters] = useState(false)
 
-        setUser(currentUser)
-
-        // Fetch tasks for user
-        const response = await taskApi.getTasks(currentUser.id)
-        setTasks(response.tasks)
-        setError(null)
-      } catch (err: any) {
-        console.error('Failed to load tasks:', err)
-        setError(err.message || 'Failed to load tasks. Please try again.')
-      } finally {
-        setIsLoading(false)
+  // Fetch tasks with search, filter, sort parameters
+  const loadTasks = useCallback(async () => {
+    try {
+      // Get current user from token
+      const currentUser = authClient.getCurrentUser()
+      if (!currentUser) {
+        router.push('/signin')
+        return
       }
-    }
 
+      setUser(currentUser)
+      setIsLoading(true)
+
+      // Build query parameters for search, filter, sort
+      const queryParams: Record<string, string> = {}
+
+      if (searchQuery) {
+        queryParams.search = searchQuery
+      }
+
+      if (filters.status) {
+        queryParams.status = filters.status
+      }
+
+      if (filters.priority) {
+        queryParams.priority = filters.priority
+      }
+
+      if (filters.tags && filters.tags.length > 0) {
+        // Pass tags as comma-separated for API
+        queryParams.tags = filters.tags.join(',')
+      }
+
+      if (filters.dueDateStart) {
+        queryParams.due_date_start = filters.dueDateStart
+      }
+
+      if (filters.dueDateEnd) {
+        queryParams.due_date_end = filters.dueDateEnd
+      }
+
+      if (sortOptions.sortBy) {
+        queryParams.sort_by = sortOptions.sortBy
+        queryParams.sort_order = sortOptions.sortOrder
+      }
+
+      // Fetch tasks for user with query parameters
+      const response = await taskApi.getTasks(currentUser.id, queryParams)
+      setTasks(response.tasks)
+      setError(null)
+    } catch (err: any) {
+      console.error('Failed to load tasks:', err)
+      setError(err.message || 'Failed to load tasks. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [router, searchQuery, filters, sortOptions])
+
+  // Load tasks on mount and when search/filter/sort change
+  useEffect(() => {
     loadTasks()
-  }, [router])
+  }, [loadTasks])
 
   // Handle toggle completion
   const handleToggleComplete = async (taskId: number) => {
@@ -93,14 +138,14 @@ export default function TasksPage() {
   }
 
   // Handle create task
-  const handleCreateTask = async (taskData: { title: string; description: string }) => {
+  const handleCreateTask = async (taskData: TaskFormData) => {
     if (!user) return
 
     setIsCreatingTask(true)
     setError(null)
 
     try {
-      // API call to create task
+      // API call to create task with Step 5 fields
       const newTask = await taskApi.createTask(user.id, taskData)
 
       // Add new task to the beginning of the list (newest first)
@@ -127,7 +172,7 @@ export default function TasksPage() {
   // Handle update task
   const handleUpdateTask = async (
     taskId: number,
-    taskData: { title: string; description: string }
+    taskData: TaskFormData
   ) => {
     if (!user) return
 
@@ -135,7 +180,7 @@ export default function TasksPage() {
     setError(null)
 
     try {
-      // API call to update task
+      // API call to update task with Step 5 fields
       const updatedTask = await taskApi.updateTask(user.id, taskId, taskData)
 
       // Update task in the list
@@ -252,6 +297,27 @@ export default function TasksPage() {
 
             {/* Actions */}
             <div className="flex items-center gap-3">
+              {/* Chat Link */}
+              <Link
+                href="/chat"
+                className="flex items-center gap-2 px-4 py-2 text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors font-medium focus:outline-none focus:ring-4 focus:ring-primary-200"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  />
+                </svg>
+                AI Chat
+              </Link>
+
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
@@ -303,12 +369,94 @@ export default function TasksPage() {
           />
         )}
 
+        {/* Step 5: Search, Filter, Sort Controls */}
+        <div className="mb-6 space-y-4">
+          {/* Search bar */}
+          <div className="animate-slide-up">
+            <SearchBar
+              onSearch={(query) => setSearchQuery(query)}
+              placeholder="Search tasks by title or description..."
+              debounceDelay={500}
+            />
+          </div>
+
+          {/* Filter and Sort controls */}
+          <div className="flex flex-col md:flex-row gap-4 items-start">
+            {/* Filter toggle button (mobile) */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="md:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
+              </svg>
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </button>
+
+            {/* Filter panel */}
+            <div className={`w-full md:w-80 ${showFilters ? 'block' : 'hidden md:block'}`}>
+              <FilterPanel
+                onFilterChange={(newFilters) => setFilters(newFilters)}
+                initialFilters={filters}
+                isOpen={true}
+              />
+            </div>
+
+            {/* Sort controls */}
+            <div className="flex-1 min-w-0">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                <SortControls
+                  onSortChange={(options) => setSortOptions(options)}
+                  initialSort={sortOptions}
+                  compact={false}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Active search/filter indicator */}
+          {(searchQuery || Object.values(filters).some(v => v !== null && v !== undefined && (Array.isArray(v) ? v.length > 0 : true)) || sortOptions.sortBy) && (
+            <div className="flex items-center gap-2 text-sm text-gray-600 animate-slide-up">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                Showing {tasks.length} task{tasks.length !== 1 ? 's' : ''}
+                {searchQuery && ` matching "${searchQuery}"`}
+                {filters.status && ` (${filters.status})`}
+                {filters.priority && ` with priority: ${filters.priority}`}
+              </span>
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  setFilters({})
+                  setSortOptions({ sortBy: null, sortOrder: 'desc' })
+                }}
+                className="ml-2 text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Task List */}
         <TaskList
           tasks={tasks}
           onToggleComplete={handleToggleComplete}
           onEdit={handleEditTask}
           onDelete={handleDeleteTask}
+          searchQuery={searchQuery}
         />
 
         {/* Delete Confirmation Modal */}

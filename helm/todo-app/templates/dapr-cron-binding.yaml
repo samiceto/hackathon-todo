@@ -1,0 +1,26 @@
+{{- if .Values.dapr.enabled }}
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: cron-reminder-processor
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    # Cron schedule (every 1 minute by default)
+    # Format: */1 * * * * (minute, hour, day of month, month, day of week)
+    - name: schedule
+      value: {{ .Values.dapr.cronBinding.schedule | default "*/1 * * * *" | quote }}
+
+    # Direction (input binding - triggers endpoint)
+    - name: direction
+      value: "input"
+
+  # Scope to reminder-service only
+  scopes:
+    - reminder-service
+{{- end }}

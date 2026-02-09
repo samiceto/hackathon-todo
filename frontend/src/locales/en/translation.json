@@ -1,0 +1,28 @@
+{
+  "chatInterface": {
+    "title": "AI Task Assistant",
+    "poweredBy": "Powered by OpenAI",
+    "newChat": "New Chat",
+    "placeholder": "Ask me to manage your tasks... Or click the mic to speak!",
+    "failedToSend": "Failed to send message. Please try again.",
+    "errorProcessing": "Sorry, I encountered an error processing your request. Please try again.",
+    "startedNewConversation": "Started new conversation"
+  },
+  "messageInput": {
+    "placeholder": "Type a message...",
+    "sendMessage": "Send message",
+    "send": "Send",
+    "enterToSend": "Press Enter to send",
+    "shiftEnterForNewLine": "Shift + Enter for new line",
+    "clickMicToSpeak": "Click mic to speak",
+    "listening": "Listening... Click to stop",
+    "stopRecording": "Stop recording",
+    "startVoiceRecording": "Start voice recording",
+    "voiceInput": "Voice input"
+  },
+  "languageSwitcher": {
+    "english": "English",
+    "urdu": "Urdu",
+    "selectLanguage": "Select Language"
+  }
+}

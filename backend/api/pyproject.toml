@@ -1,9 +1,8 @@
 [project]
 name = "hackathon-todo-api"
-version = "0.1.0"
-description = "FastAPI backend for Hackathon Todo - Step 2 Full-Stack Web Application"
+version = "0.2.0"
+description = "FastAPI backend for Hackathon Todo - Steps 2-3: Full-Stack Web Application with AI Chatbot"
 requires-python = ">=3.13"
-readme = "README.md"
 authors = [
     { name = "Developer", email = "dev@example.com" }
 ]
@@ -26,6 +25,13 @@ dependencies = [
     # Email validation
     "email-validator>=2.2.0",
     "bcrypt>=5.0.0",
+    # Step 3: AI and MCP (Model Context Protocol)
+    "openai>=1.54.0",  # OpenAI API client
+    "httpx>=0.27.0",  # HTTP client for async requests
+    "sse-starlette>=2.0.0",  # Server-Sent Events support for FastAPI
+    # Step 5: Advanced features and event-driven architecture
+    "python-dateutil>=2.9.0",  # RRULE parsing for recurring tasks
+    "dapr>=1.14.0",  # Dapr SDK for event publishing and distributed runtime
 ]
 
 [project.optional-dependencies]

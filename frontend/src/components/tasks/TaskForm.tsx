@@ -1,8 +1,14 @@
 /**
- * TaskForm Component - Phases 5 & 6
+ * TaskForm Component - Phases 5 & 6 + Step 5 Enhancements
  *
  * An elegant, inviting form for creating and editing tasks.
  * Designed to make task capture and updates feel effortless and rewarding.
+ *
+ * Step 5 Enhancements:
+ * - Priority selection (low, medium, high, urgent)
+ * - Due date picker with datetime support
+ * - Recurrence rule input (RRULE format)
+ * - Reminder offset (minutes before due date)
  */
 
 'use client'
@@ -11,12 +17,28 @@ import React, { useState, useEffect } from 'react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { Task } from '@/lib/api/tasks'
+import RecurrenceInput from './RecurrenceInput'
+import DueDatePicker from './DueDatePicker'
+import ReminderOffsetInput from './ReminderOffsetInput'
+import PrioritySelector from './PrioritySelector'
+import TagInput from './TagInput'
+
+export interface TaskFormData {
+  title: string
+  description: string
+  // Step 5: Advanced fields
+  priority?: string
+  due_date?: string | null
+  recurrence_rule?: string | null
+  reminder_offset?: number | null
+  tags?: string[]
+}
 
 export interface TaskFormProps {
   /** Callback when task is successfully created */
-  onTaskCreated?: (task: { title: string; description: string }) => void
+  onTaskCreated?: (task: TaskFormData) => void
   /** Callback when task is successfully updated */
-  onTaskUpdated?: (taskId: number, task: { title: string; description: string }) => void
+  onTaskUpdated?: (taskId: number, task: TaskFormData) => void
   /** Callback when form is cancelled */
   onCancel?: () => void
   /** Loading state during submission */
@@ -39,7 +61,15 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [isExpanded, setIsExpanded] = useState(initialExpanded || isEditMode)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [errors, setErrors] = useState<{ title?: string; description?: string }>({})
+
+  // Step 5: Advanced fields
+  const [priority, setPriority] = useState<string>('medium')
+  const [dueDate, setDueDate] = useState<string>('')
+  const [recurrenceRule, setRecurrenceRule] = useState<string | null>(null)
+  const [reminderOffset, setReminderOffset] = useState<string>('')
+  const [tags, setTags] = useState<string[]>([])
+
+  const [errors, setErrors] = useState<{ title?: string; description?: string; reminderOffset?: string }>({})
   const [hasInteracted, setHasInteracted] = useState(false)
 
   // Populate form when editing
@@ -47,6 +77,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     if (editTask) {
       setTitle(editTask.title)
       setDescription(editTask.description || '')
+
+      // Step 5: Populate advanced fields
+      setPriority(editTask.priority || 'medium')
+      setDueDate(editTask.due_date ? editTask.due_date.substring(0, 16) : '') // Format for datetime-local input
+      setRecurrenceRule(editTask.recurrence_rule || null)
+      setReminderOffset(editTask.reminder_offset ? String(editTask.reminder_offset) : '')
+      setTags(editTask.tags || [])
+
       setIsExpanded(true)
       setErrors({})
       setHasInteracted(false)
@@ -67,6 +105,20 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const validateDescription = (value: string): string | undefined => {
     if (value.length > 5000) {
       return 'Description must be 5000 characters or less'
+    }
+    return undefined
+  }
+
+  // Step 5: Validate reminder offset
+  const validateReminderOffset = (value: string, dueDate: string): string | undefined => {
+    if (value && !dueDate) {
+      return 'Reminder offset requires a due date'
+    }
+    if (value) {
+      const offset = parseInt(value, 10)
+      if (isNaN(offset) || offset <= 0) {
+        return 'Reminder offset must be a positive number'
+      }
     }
     return undefined
   }
@@ -97,32 +149,44 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     // Validate all fields
     const titleError = validateTitle(title)
     const descriptionError = validateDescription(description)
+    const reminderOffsetError = validateReminderOffset(reminderOffset, dueDate)
 
-    if (titleError || descriptionError) {
+    if (titleError || descriptionError || reminderOffsetError) {
       setErrors({
         title: titleError,
         description: descriptionError,
+        reminderOffset: reminderOffsetError,
       })
       return
     }
 
+    // Build task data
+    const taskData: TaskFormData = {
+      title: title.trim(),
+      description: description.trim(),
+      priority,
+      due_date: dueDate ? new Date(dueDate).toISOString() : null,
+      recurrence_rule: recurrenceRule || null,
+      reminder_offset: reminderOffset ? parseInt(reminderOffset, 10) : null,
+      tags: tags.length > 0 ? tags : undefined,
+    }
+
     // Submit
     if (isEditMode && editTask) {
-      onTaskUpdated?.(editTask.id, {
-        title: title.trim(),
-        description: description.trim(),
-      })
+      onTaskUpdated?.(editTask.id, taskData)
     } else {
-      onTaskCreated?.({
-        title: title.trim(),
-        description: description.trim(),
-      })
+      onTaskCreated?.(taskData)
     }
 
     // Reset form (except in edit mode - parent will close it)
     if (!isEditMode) {
       setTitle('')
       setDescription('')
+      setPriority('medium')
+      setDueDate('')
+      setRecurrenceRule(null)
+      setReminderOffset('')
+      setTags([])
       setErrors({})
       setHasInteracted(false)
       setIsExpanded(false)
@@ -133,6 +197,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const handleCancel = () => {
     setTitle('')
     setDescription('')
+    setPriority('medium')
+    setDueDate('')
+    setRecurrenceRule(null)
+    setReminderOffset('')
+    setTags([])
     setErrors({})
     setHasInteracted(false)
     if (!isEditMode) {
@@ -307,6 +376,41 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             showCharCount
             maxCharCount={5000}
             helperText="Optional - add context, notes, or subtasks"
+          />
+
+          {/* Step 5: Priority selection */}
+          <PrioritySelector
+            value={priority}
+            onChange={setPriority}
+          />
+
+          {/* Step 5: Tags */}
+          <TagInput
+            value={tags}
+            onChange={setTags}
+            maxTags={10}
+          />
+
+          {/* Step 5: Due date */}
+          <DueDatePicker
+            value={dueDate}
+            onChange={setDueDate}
+            label="Due Date (optional)"
+            showClear
+          />
+
+          {/* Step 5: Recurrence rule */}
+          <RecurrenceInput
+            value={recurrenceRule}
+            onChange={setRecurrenceRule}
+          />
+
+          {/* Step 5: Reminder offset */}
+          <ReminderOffsetInput
+            value={reminderOffset}
+            onChange={setReminderOffset}
+            hasDueDate={!!dueDate}
+            error={errors.reminderOffset}
           />
 
           {/* Action buttons */}

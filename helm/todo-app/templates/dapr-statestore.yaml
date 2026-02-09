@@ -3,55 +3,24 @@
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
-  name: statestore-redis
+  name: {{ .Values.dapr.statestore.name | default "statestore-redis" }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "todo-app.labels" . | nindent 4 }}
 spec:
-  type: state.redis
-  version: v1
+  type: {{ .Values.dapr.statestore.type | default "state.redis" }}
+  version: {{ .Values.dapr.statestore.version | default "v1" }}
   metadata:
-    # Redis connection
-    - name: redisHost
-      value: {{ .Values.redis.host | quote }}
-
-    {{- if .Values.redis.auth.enabled }}
-    # Authentication
-    - name: redisPassword
+    {{- range .Values.dapr.statestore.metadata }}
+    - name: {{ .name }}
+      {{- if .value }}
+      value: {{ .value | quote }}
+      {{- else if .secretKeyRef }}
       secretKeyRef:
-        name: {{ .Values.redis.auth.secretName | default "redis-credentials" }}
-        key: {{ .Values.redis.auth.passwordKey | default "password" }}
+        name: {{ .secretKeyRef.name }}
+        key: {{ .secretKeyRef.key }}
+      {{- end }}
     {{- end }}
-
-    # Database selection
-    - name: redisDB
-      value: {{ .Values.redis.database | default "0" | quote }}
-
-    {{- if .Values.redis.tls.enabled }}
-    # TLS/SSL settings (for cloud Redis)
-    - name: enableTLS
-      value: "true"
-    {{- else }}
-    # No TLS (for local Redis)
-    - name: enableTLS
-      value: "false"
-    {{- end }}
-
-    # TTL settings (default 1 hour)
-    - name: ttlInSeconds
-      value: {{ .Values.redis.ttlInSeconds | default "3600" | quote }}
-
-    # Connection pool settings
-    {{- if .Values.redis.maxRetries }}
-    - name: maxRetries
-      value: {{ .Values.redis.maxRetries | quote }}
-    {{- end }}
-
-    {{- if .Values.redis.maxRetryBackoff }}
-    - name: maxRetryBackoff
-      value: {{ .Values.redis.maxRetryBackoff | quote }}
-    {{- end }}
-
   # Scope to specific apps (backend and reminder-service)
   scopes:
     - backend

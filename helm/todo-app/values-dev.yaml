@@ -59,6 +59,54 @@ frontend:
     nextPublicApiUrl: "http://localhost:8000"  # Backend via port-forward (WSL/Windows compatibility)
     nextPublicOpenaiDomainKey: ""  # Provide if needed
 
+# Reminder Service configuration (Step 5)
+reminderService:
+  # Enable reminder service for Step 5
+  enabled: true
+
+  # Single replica for local development
+  replicaCount: 1
+
+  # Local image configuration
+  image:
+    repository: todo-reminder-service
+    tag: latest
+    pullPolicy: Never  # Use local images only
+
+  # Service configuration
+  service:
+    type: ClusterIP  # Internal service only
+    port: 8001
+
+  # Resource limits for local development
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+  # Development logging
+  logLevel: "DEBUG"
+
+  # Security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+
+# Database configuration
+database:
+  secretName: "backend-secret"  # References the backend secret containing DATABASE_URL
+
 # Ingress disabled for Minikube
 ingress:
   enabled: false
@@ -74,6 +122,7 @@ podDisruptionBudget:
 # Dapr configuration for Minikube development (T086)
 dapr:
   enabled: true
+  logLevel: "debug"  # Verbose logging for local development
 
   # Pub/Sub component configuration (Kafka/Redpanda)
   pubsub:
@@ -97,11 +146,9 @@ dapr:
     version: v1
     metadata:
       - name: redisHost
-        value: "redis-master:6379"  # Local Redis for Minikube
+        value: "redis:6379"  # Local Redis for Minikube (matches service name in redis.yaml)
       - name: redisPassword
-        secretKeyRef:
-          name: redis
-          key: redis-password
+        value: ""  # No password for local development
       - name: actorStateStore
         value: "true"
 

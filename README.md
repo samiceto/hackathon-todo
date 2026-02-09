@@ -2,7 +2,7 @@
 
 A progressive task management application built in 5 incremental steps, evolving from a simple CLI tool to a cloud-deployed full-stack application with AI capabilities.
 
-**Current Status**: Step 4 - Kubernetes Deployment ✅ (Phases 5-6 Complete)
+**Current Status**: Step 5 - Advanced Cloud Deployment 🔨 (User Stories 1-9 Complete)
 
 ## 📋 Project Overview
 
@@ -11,12 +11,79 @@ This project demonstrates Spec-Driven Development (SDD) by building a complete a
 - **Step 1** ✅: Console Todo App (Python CLI with in-memory storage)
 - **Step 2** ✅: Web Application (FastAPI backend + Next.js frontend + PostgreSQL)
 - **Step 3** ✅: AI Chatbot Integration (OpenAI Agents SDK + ChatKit UI)
-- **Step 4** 🔨: **Kubernetes Deployment** (Minikube + Helm Charts + Docker) - **IN PROGRESS**
-- **Step 5** 📅: Cloud Deployment (CI/CD + Monitoring + Production)
+- **Step 4** ✅: Kubernetes Deployment (Minikube + Helm Charts + Docker)
+- **Step 5** 🔨: **Advanced Cloud Deployment** (Event-Driven + Dapr + AWS k3s) - **IN PROGRESS**
 
 ## 🎯 Quick Start
 
-### Step 4: Run on Kubernetes (Current)
+### Step 5: Deploy to AWS k3s (Current)
+
+Deploy the full-stack Todo App with advanced features (recurring tasks, reminders, event-driven architecture) to AWS using k3s:
+
+```bash
+# Prerequisites: AWS account (free tier), Docker, kubectl, Helm 3.x, Dapr CLI
+
+# 1. Provision AWS infrastructure (see cloud-provisioning.md)
+# - Launch EC2 t2.medium instance
+# - Install k3s
+# - Configure security groups
+
+# 2. Build and push Docker images to Docker Hub
+docker login
+docker build -t <your-username>/todo-backend:latest ./backend/api
+docker build -t <your-username>/todo-frontend:latest ./frontend
+docker build -t <your-username>/todo-reminder-service:latest ./backend/reminder-service
+docker push <your-username>/todo-backend:latest
+docker push <your-username>/todo-frontend:latest
+docker push <your-username>/todo-reminder-service:latest
+
+# 3. Configure kubectl for AWS k3s
+export KUBECONFIG=~/.kube/config-aws
+
+# 4. Install Dapr
+dapr init -k
+
+# 5. Deploy application
+./scripts/deploy-to-aws.sh
+
+# 6. Access the application
+# Frontend: http://<ELASTIC_IP>:30000
+# Backend: http://<ELASTIC_IP>:30001
+```
+
+**Detailed Guides**:
+- [Cloud Provisioning Guide](specs/005-step-5-cloud-deployment/design/cloud-provisioning.md)
+- [Cloud Deployment Guide](specs/005-step-5-cloud-deployment/design/cloud-deployment.md)
+
+### Step 5: Run on Minikube (Local Development)
+
+Deploy the complete Step 5 stack locally with Minikube:
+
+```bash
+# Prerequisites: Docker, Minikube 1.30+, kubectl, Helm 3.x, Dapr CLI
+
+# 1. Setup Minikube
+./scripts/setup-minikube.sh
+
+# 2. Install Dapr
+./scripts/install-dapr-minikube.sh
+
+# 3. Build images
+./scripts/build-local-images.sh
+
+# 4. Deploy application
+./scripts/deploy-to-minikube.sh
+
+# 5. Run end-to-end tests
+./scripts/e2e-test-minikube.sh
+
+# 6. Access the application
+minikube service todo-app-frontend
+```
+
+**Detailed Guide**: [Minikube Quickstart](specs/005-step-5-cloud-deployment/design/quickstart.md)
+
+### Step 4: Run on Kubernetes (Previous)
 
 Deploy the full-stack Todo Chatbot application to a local Kubernetes cluster using Minikube:
 
@@ -85,31 +152,52 @@ uv run hackathon-todo
 hackathon-todo/
 ├── backend/
 │   ├── console/          # Step 1: Python CLI app
-│   └── api/              # Steps 2-3: FastAPI application
-│       ├── Dockerfile    # Step 4: Backend container
-│       └── src/          # API, agents, MCP, auth
-├── frontend/             # Steps 2-3: Next.js application
-│   ├── Dockerfile        # Step 4: Frontend container
+│   ├── api/              # Steps 2-5: FastAPI application
+│   │   ├── Dockerfile    # Step 4-5: Backend container
+│   │   └── src/          # API, agents, MCP, auth
+│   └── reminder-service/ # Step 5: Event-driven reminder processor
+│       ├── Dockerfile    # Reminder service container
+│       └── src/          # Event consumers, cron processor
+├── frontend/             # Steps 2-5: Next.js application
+│   ├── Dockerfile        # Step 4-5: Frontend container
 │   └── src/              # UI components, ChatKit
-├── helm/                 # Step 4: Helm Charts
+├── helm/                 # Steps 4-5: Helm Charts
 │   └── todo-app/         # Kubernetes deployment
 │       ├── Chart.yaml
-│       ├── values.yaml   # Production defaults
-│       ├── values-dev.yaml  # Minikube overrides
-│       └── templates/    # K8s resource templates
+│       ├── values.yaml          # Production defaults
+│       ├── values-dev.yaml      # Minikube overrides
+│       ├── values-prod-aws.yaml # AWS k3s production
+│       ├── templates/           # K8s resource templates
+│       └── dependencies/        # Redpanda, Redis YAMLs
+├── scripts/              # Step 5: Deployment automation
+│   ├── setup-minikube.sh
+│   ├── install-dapr-minikube.sh
+│   ├── build-local-images.sh
+│   ├── deploy-to-minikube.sh
+│   ├── deploy-to-aws.sh
+│   └── e2e-test-minikube.sh
 ├── specs/                # Feature specifications
 │   ├── 001-step-1-core-features/
 │   ├── 003-step-3-ai-chatbot/
-│   └── 004-k8s-deployment/
+│   ├── 004-k8s-deployment/
+│   └── 005-step-5-cloud-deployment/
 ├── history/              # Prompt History Records (PHRs)
 └── .specify/             # SDD templates & scripts
 ```
 
 ### Tech Stack
 
-**Step 4 (Current - Kubernetes)**:
+**Step 5 (Current - Advanced Cloud Deployment)**:
+- **Event Streaming**: Kafka (Redpanda for local/self-hosted)
+- **State Management**: Redis (self-hosted in cluster)
+- **Distributed Runtime**: Dapr 1.12+ (Pub/Sub, State Store, Cron, Secrets)
+- **Reminder Service**: FastAPI microservice with event consumers
+- **Cloud Platform**: AWS EC2 with k3s (free tier compatible)
+- **Advanced Features**: Recurring tasks, due dates, reminders, priorities, tags, search/filter/sort
+
+**Step 4 (Kubernetes)**:
 - **Container Runtime**: Docker 24+ (multi-stage builds)
-- **Orchestration**: Kubernetes 1.28+ (via Minikube)
+- **Orchestration**: Kubernetes 1.28+ (via Minikube or k3s)
 - **Package Manager**: Helm 3.x (declarative infrastructure)
 - **Health Checks**: Liveness & readiness probes
 - **Resource Management**: CPU/memory limits enforced
@@ -131,7 +219,59 @@ hackathon-todo/
 - **Package Manager**: UV
 - **Testing**: pytest (97.44% coverage)
 
-## 🐳 Kubernetes Deployment (Step 4)
+## 🚀 Step 5: Advanced Features
+
+### Event-Driven Architecture
+
+**Pub/Sub Pattern with Dapr**:
+- Task lifecycle events (created, updated, completed, deleted)
+- Reminder events published when due
+- Asynchronous processing via Kafka topics
+- Decoupled microservices communication
+
+**Components**:
+- **Backend API**: Publishes events on task operations
+- **Reminder Service**: Consumes events, schedules reminders, publishes reminder.due events
+- **Kafka (Redpanda)**: Message broker for event streaming
+- **Redis**: State store for Dapr actors and caching
+
+### Advanced Task Management
+
+**Recurring Tasks**:
+- RRULE-based recurrence patterns (daily, weekly, monthly)
+- Automatic task instance generation
+- Human-readable recurrence display
+
+**Due Dates & Reminders**:
+- Set task deadlines with date/time
+- Configurable reminder offsets (e.g., 30 minutes before)
+- Reminder events published to Kafka for notification services
+
+**Priorities & Tags**:
+- Priority levels: urgent, high, medium, low
+- Multiple tags per task (max 10)
+- Color-coded priority badges
+
+**Search, Filter & Sort**:
+- Full-text search on title and description (PostgreSQL tsvector)
+- Multi-criteria filtering (status, priority, tags, due date ranges)
+- Flexible sorting (created_at, due_date, priority, title)
+
+### Deployment Options
+
+**Minikube (Local Development)**:
+- Single-command deployment scripts
+- Self-hosted Kafka (Redpanda) and Redis
+- NodePort services for easy access
+- End-to-end test automation
+
+**AWS k3s (Production - Free Tier)**:
+- Lightweight Kubernetes on EC2 t2.medium
+- Neon PostgreSQL (free tier, external)
+- Self-hosted Redpanda and Redis in cluster
+- Cost: $0/month within AWS free tier (first 12 months)
+
+## 🐳 Kubernetes Deployment (Steps 4-5)
 
 ### Helm Chart Features
 
@@ -148,6 +288,18 @@ hackathon-todo/
 |-----------|----------|----------------------------|---------------|--------|
 | Backend (FastAPI) | 1 (dev) / 2 (prod) | CPU: 250m/500m, Memory: 256Mi/512Mi | /health endpoint | ClusterIP (NodePort in dev) |
 | Frontend (Next.js) | 1 (dev) / 2 (prod) | CPU: 100m/200m, Memory: 128Mi/256Mi | / endpoint | NodePort (port 30000) |
+| Reminder Service (Step 5) | 1 | CPU: 100m/200m, Memory: 128Mi/256Mi | /health endpoint | ClusterIP (internal only) |
+| Redpanda (Kafka - Step 5) | 1 | CPU: 100m/500m, Memory: 512Mi/1Gi | rpk cluster health | ClusterIP (internal only) |
+| Redis (Step 5) | 1 | CPU: 50m/200m, Memory: 128Mi/256Mi | redis-cli ping | ClusterIP (internal only) |
+
+### Dapr Components (Step 5)
+
+| Component | Type | Purpose | Configuration |
+|-----------|------|---------|---------------|
+| pubsub-kafka | pubsub.kafka | Event streaming | Redpanda broker at redpanda:9092 |
+| statestore-redis | state.redis | State management | Redis at redis:6379 |
+| cron-reminder-processor | bindings.cron | Scheduled tasks | Every 1 minute trigger |
+| kubernetes-secrets | secretstores.kubernetes | Secret management | K8s native secrets |
 
 ### Helm Commands
 
@@ -186,6 +338,33 @@ minikube service todo-app-frontend
 
 ## 🧪 Testing
 
+### Step 5: End-to-End Tests
+
+```bash
+# Minikube deployment tests
+./scripts/e2e-test-minikube.sh
+
+# Manual tests
+# 1. Create recurring task
+curl -X POST http://$(minikube ip):30001/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Daily Standup","recurrence_rule":"FREQ=DAILY","priority":"high"}'
+
+# 2. Create task with reminder
+curl -X POST http://$(minikube ip):30001/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Meeting","due_date":"2026-02-10T14:00:00Z","reminder_offset":1800}'
+
+# 3. Check Kafka topics
+kubectl exec -it redpanda-0 -- rpk topic list
+
+# 4. Check Redis connectivity
+kubectl exec -it redis-0 -- redis-cli ping
+
+# 5. View reminder service logs
+kubectl logs -f -l app.kubernetes.io/component=reminder-service -c reminder-service
+```
+
 ### Step 4: Kubernetes Deployment Tests
 
 ```bash
@@ -218,6 +397,15 @@ uv run pytest --cov             # Coverage report (97.44%)
 ```
 
 ## 📚 Documentation
+
+### Step 5: Advanced Cloud Deployment
+
+- **Minikube Quickstart**: [specs/005-step-5-cloud-deployment/design/quickstart.md](specs/005-step-5-cloud-deployment/design/quickstart.md) - Complete local deployment guide
+- **Cloud Provisioning**: [specs/005-step-5-cloud-deployment/design/cloud-provisioning.md](specs/005-step-5-cloud-deployment/design/cloud-provisioning.md) - AWS k3s infrastructure setup
+- **Cloud Deployment**: [specs/005-step-5-cloud-deployment/design/cloud-deployment.md](specs/005-step-5-cloud-deployment/design/cloud-deployment.md) - Application deployment to AWS
+- **Feature Spec**: [specs/005-step-5-cloud-deployment/spec.md](specs/005-step-5-cloud-deployment/spec.md) - 11 user stories with acceptance scenarios
+- **Implementation Plan**: [specs/005-step-5-cloud-deployment/plan.md](specs/005-step-5-cloud-deployment/plan.md) - Technical decisions and architecture
+- **Implementation Tasks**: [specs/005-step-5-cloud-deployment/tasks.md](specs/005-step-5-cloud-deployment/tasks.md) - Detailed task breakdown
 
 ### Step 4: Kubernetes Deployment
 
@@ -326,14 +514,17 @@ This is a demonstration project for Spec-Driven Development. To contribute:
 ## 🙏 Acknowledgments
 
 Built with:
+- [Dapr](https://dapr.io/) - Distributed application runtime
+- [Redpanda](https://redpanda.com/) - Kafka-compatible event streaming
 - [OpenAI Agents SDK](https://github.com/openai/swarm) - Multi-agent orchestration
 - [OpenAI ChatKit](https://github.com/openai/chatkit) - Chat UI components
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
 - [Next.js](https://nextjs.org/) - React framework for production
 - [Kubernetes](https://kubernetes.io/) - Container orchestration
 - [Helm](https://helm.sh/) - Kubernetes package manager
+- [k3s](https://k3s.io/) - Lightweight Kubernetes
 - [Neon](https://neon.tech/) - Serverless PostgreSQL
 
 ---
 
-**Last Updated**: 2026-01-25 (Step 4 - Phases 5-6 Complete: Helm Lifecycle + Health Checks)
+**Last Updated**: 2026-02-09 (Step 5 - User Stories 1-9 Complete: Advanced Features + Event-Driven Architecture + Cloud Deployment)

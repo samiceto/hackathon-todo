@@ -25,7 +25,7 @@ backend:
 
   # Development configuration
   config:
-    corsOrigins: "http://localhost:3000,http://localhost:8000"
+    corsOrigins: "http://localhost:3000,http://localhost:8000,http://localhost:8080,http://localhost:8002"
     databaseUrl: "postgresql://neondb_owner:npg_QVsP5gmjC4wb@ep-snowy-cell-a4068rur-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
     logLevel: "debug"

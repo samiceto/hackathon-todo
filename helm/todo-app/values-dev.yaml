@@ -56,7 +56,7 @@ frontend:
 
   # Development configuration
   config:
-    nextPublicApiUrl: "http://localhost:8000"  # Backend via port-forward (WSL/Windows compatibility)
+    nextPublicApiUrl: "http://localhost:8002"  # Backend via port-forward on 8002 (WSL/Windows compatibility)
     nextPublicOpenaiDomainKey: ""  # Provide if needed
 
 # Reminder Service configuration (Step 5)

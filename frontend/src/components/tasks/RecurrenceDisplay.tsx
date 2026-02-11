@@ -14,8 +14,6 @@
  * - Handles invalid RRULEs gracefully
  */
 
-import React from "react";
-
 interface RecurrenceDisplayProps {
   /** iCal RRULE format recurrence rule (e.g., "FREQ=DAILY") */
   recurrenceRule: string | null | undefined;

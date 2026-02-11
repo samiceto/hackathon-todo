@@ -14,8 +14,6 @@
 
 "use client";
 
-import React from "react";
-
 interface PrioritySelectorProps {
   /** Current priority value */
   value: string;

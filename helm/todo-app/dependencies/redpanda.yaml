@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: redpanda
-        image: docker.redpanda.com/redpandadata/redpanda:v23.2.15
+        image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
         ports:
         - containerPort: 9092
           name: kafka-api
@@ -36,23 +36,8 @@ spec:
         - |
           rpk redpanda start \
           --mode dev-container \
-          --set redpanda.auto_create_topics_enabled=true \
-          --set redpanda.enable_transactions=true \
-          --set redpanda.enable_idempotence=true \
-          --set redpanda.default_topic_replications=1 \
-          --set redpanda.transaction_coordinator_replication=1 \
-          --set redpanda.id_allocator_replication=1 \
-          --set redpanda.enable_leader_balancer=false \
-          --set redpanda.seed_servers=[] \
-          --advertise-kafka-addr INTERNAL://$POD_IP:9092 \
-          --kafka-addr PLAINTEXT://0.0.0.0:9092,INTERNAL://0.0.0.0:9093 \
-          --advertise-rpc-addr $POD_IP:33145 \
-          --rpc-addr 0.0.0.0:33145 \
-          --memory 512M \
-          --reserve-memory 0M \
-          --smp 1 \
-          --lock-memory 0 \
-          --logger-log-level=info
+          --kafka-addr 0.0.0.0:9092 \
+          --advertise-kafka-addr $POD_IP:9092
         env:
         - name: POD_IP
           valueFrom:
@@ -152,7 +137,7 @@ spec:
     spec:
       containers:
       - name: topic-creator
-        image: docker.redpanda.com/redpandadata/redpanda:v23.2.15
+        image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
         command:
         - /bin/sh
         - -c

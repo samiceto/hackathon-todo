@@ -16,7 +16,8 @@ COPY pyproject.toml ./
 # Install dependencies to a virtual environment
 RUN uv venv /opt/venv && \
     . /opt/venv/bin/activate && \
-    uv pip install --no-cache-dir -r <(uv pip compile pyproject.toml)
+    uv pip compile pyproject.toml -o requirements.txt && \
+    uv pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Runtime stage
 FROM python:3.13-slim

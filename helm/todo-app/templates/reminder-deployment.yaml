@@ -25,8 +25,6 @@ spec:
         dapr.io/metrics-port: "9091"
         dapr.io/http-max-request-size: "4"
         dapr.io/http-read-buffer-size: "4"
-        # Restart pods when config changes
-        checksum/config: {{ include (print $.Template.BasePath "/reminder-configmap.yaml") . | sha256sum }}
       labels:
         {{- include "todo-app.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: reminder-service
@@ -56,9 +54,9 @@ spec:
           value: {{ .Values.reminderService.logLevel | default "INFO" | quote }}
         - name: DATABASE_URL
           valueFrom:
-            secretKeyRef:
-              name: {{ .Values.database.secretName | default "database-credentials" }}
-              key: url
+            configMapKeyRef:
+              name: {{ include "todo-app.fullname" . }}-backend-config
+              key: DATABASE_URL
         - name: DAPR_HTTP_PORT
           value: "3500"
         - name: DAPR_GRPC_PORT

@@ -33,7 +33,7 @@ backend:
   # Secrets must be provided via --set flags
   # Example: --set backend.secrets.openaiApiKey=sk-...
   secrets:
-    openaiApiKey: ""
+    openaiApiKey: "sk-dummy-key-for-testing"
     betterAuthSecret: "uwOPm1ir2FvGcIcJoOGyub2FQPQPysvC"
 
 # Frontend configuration overrides
@@ -105,7 +105,7 @@ reminderService:
 
 # Database configuration
 database:
-  secretName: "backend-secret"  # References the backend secret containing DATABASE_URL
+  secretName: "todo-app-backend-secrets"  # References the backend secret containing DATABASE_URL
 
 # Ingress disabled for Minikube
 ingress:

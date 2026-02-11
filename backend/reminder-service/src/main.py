@@ -75,11 +75,13 @@ async def health_check():
     }
 
 
-@app.post("/cron", tags=["Cron"])
+@app.post("/cron-reminder-processor", tags=["Cron"])
 async def process_reminders_cron(session: Session = Depends(get_session)):
     """Dapr Cron Binding endpoint (T075).
 
     Triggered every 1 minute by Dapr Cron Binding to process due reminders.
+    Endpoint name must match the Dapr component name: cron-reminder-processor
+
     Queries the database for reminders with reminder_at <= now and sent = false,
     then publishes reminder.due events.
 

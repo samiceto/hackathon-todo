@@ -14,8 +14,6 @@
 
 "use client";
 
-import React from "react";
-
 interface DueDatePickerProps {
   /** Current due date value (ISO 8601 string or datetime-local format) */
   value: string;

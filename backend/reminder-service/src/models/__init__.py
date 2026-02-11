@@ -1,18 +1,10 @@
 """Models for Reminder Service.
 
-The Reminder model is shared with the main backend API to ensure consistency.
-We import it from the backend/api models directory.
+The Reminder and Event models are shared with the main backend API.
+For the reminder-service, we maintain local copies to avoid cross-service dependencies.
 """
 
-# Import Reminder model from backend/api
-import sys
-from pathlib import Path
-
-# Add backend/api to Python path to import shared models
-api_path = Path(__file__).parent.parent.parent.parent / "api" / "src"
-sys.path.insert(0, str(api_path))
-
-from models.reminder import Reminder
-from models.event import ReminderDueEvent
+from .reminder import Reminder
+from .event import ReminderDueEvent
 
 __all__ = ["Reminder", "ReminderDueEvent"]

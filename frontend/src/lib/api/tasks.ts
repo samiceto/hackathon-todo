@@ -41,6 +41,12 @@ export interface TaskListResponse {
 export interface CreateTaskData {
   title: string
   description?: string
+  // Step 5: Advanced fields
+  priority?: string
+  due_date?: string | null
+  recurrence_rule?: string | null
+  reminder_offset?: number | null
+  tags?: string[]
 }
 
 /**
@@ -49,6 +55,12 @@ export interface CreateTaskData {
 export interface UpdateTaskData {
   title?: string
   description?: string
+  // Step 5: Advanced fields
+  priority?: string
+  due_date?: string | null
+  recurrence_rule?: string | null
+  reminder_offset?: number | null
+  tags?: string[]
 }
 
 /**
@@ -182,6 +194,30 @@ export const taskApi = {
    */
   async deleteTask(userId: number, taskId: number): Promise<void> {
     return apiClient.delete<void>(`/api/${userId}/tasks/${taskId}`)
+  },
+}
+
+/**
+ * Tag API methods — dedicated endpoints for per-task tag management.
+ * Use these for add/remove without re-submitting the entire task form.
+ */
+export const tagApi = {
+  /**
+   * Add a tag to a task. Returns the full updated tag list for the task.
+   * Idempotent: adding an existing tag is a no-op.
+   * Max 10 tags per task.
+   */
+  async addTag(userId: number, taskId: number, tagName: string): Promise<string[]> {
+    return apiClient.post<string[]>(`/api/${userId}/tasks/${taskId}/tags`, {
+      tag_name: tagName,
+    })
+  },
+
+  /** Remove a single tag from a task by name. */
+  async removeTag(userId: number, taskId: number, tagName: string): Promise<void> {
+    return apiClient.delete<void>(
+      `/api/${userId}/tasks/${taskId}/tags/${encodeURIComponent(tagName)}`
+    )
   },
 }
 

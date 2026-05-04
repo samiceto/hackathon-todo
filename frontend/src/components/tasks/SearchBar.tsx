@@ -1,166 +1,58 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useCallback } from "react";
-import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect, useRef } from 'react'
 
 interface SearchBarProps {
-  /**
-   * Callback when search query changes (debounced)
-   * @param query - The search query string
-   */
-  onSearch: (query: string) => void;
-
-  /**
-   * Debounce delay in milliseconds (default: 300ms)
-   */
-  debounceDelay?: number;
-
-  /**
-   * Placeholder text for the search input
-   */
-  placeholder?: string;
-
-  /**
-   * Initial search query value
-   */
-  initialValue?: string;
+  onSearch: (query: string) => void
+  debounceDelay?: number
+  placeholder?: string
+  initialValue?: string
 }
 
-/**
- * SearchBar Component
- *
- * Provides a debounced search input for task search.
- * Automatically debounces input to reduce API calls.
- *
- * Features:
- * - Debounced search (default: 300ms delay)
- * - Clear button when text is present
- * - Search icon indicator
- * - Responsive design
- *
- * @example
- * ```tsx
- * <SearchBar
- *   onSearch={(query) => fetchTasks({ search: query })}
- *   placeholder="Search tasks..."
- *   debounceDelay={500}
- * />
- * ```
- */
-export default function SearchBar({
-  onSearch,
-  debounceDelay = 300,
-  placeholder = "Search tasks by title or description...",
-  initialValue = "",
-}: SearchBarProps) {
-  const [searchTerm, setSearchTerm] = useState(initialValue);
-  const [isSearching, setIsSearching] = useState(false);
+export default function SearchBar({ onSearch, debounceDelay = 500, placeholder = 'Search tasks…', initialValue = '' }: SearchBarProps) {
+  const [value, setValue] = useState(initialValue)
+  const [isPending, setIsPending] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Debounced search handler
   useEffect(() => {
-    // Don't search if the search term is empty or just whitespace
-    if (!searchTerm.trim()) {
-      onSearch("");
-      setIsSearching(false);
-      return;
-    }
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setIsPending(true)
+    timerRef.current = setTimeout(() => { onSearch(value); setIsPending(false) }, debounceDelay)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [value])
 
-    setIsSearching(true);
-
-    // Debounce the search
-    const timerId = setTimeout(() => {
-      onSearch(searchTerm.trim());
-      setIsSearching(false);
-    }, debounceDelay);
-
-    // Cleanup: cancel the previous timeout when searchTerm changes
-    return () => {
-      clearTimeout(timerId);
-      setIsSearching(false);
-    };
-  }, [searchTerm, debounceDelay, onSearch]);
-
-  /**
-   * Handle input change
-   */
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  /**
-   * Handle clear button click
-   */
-  const handleClear = useCallback(() => {
-    setSearchTerm("");
-    onSearch("");
-    setIsSearching(false);
-  }, [onSearch]);
-
-  /**
-   * Handle Enter key press (trigger immediate search without waiting for debounce)
-   */
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const value = searchTerm.trim();
-      if (value) {
-        onSearch(value);
-        setIsSearching(false);
-      }
-    }
-  };
+  const clear = () => { setValue(''); onSearch(''); setIsPending(false) }
 
   return (
-    <div className="relative w-full">
-      {/* Search icon */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-        <MagnifyingGlassIcon
-          className={`h-5 w-5 transition-colors ${
-            isSearching ? "text-blue-500" : "text-gray-400"
-          }`}
-          aria-hidden="true"
-        />
+    <div className="relative flex-1">
+      <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+        {isPending ? (
+          <svg className="h-4 w-4 animate-spin text-teal-500" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        ) : (
+          <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        )}
       </div>
-
-      {/* Search input */}
       <input
-        type="text"
-        className={`
-          block w-full rounded-lg border border-gray-300
-          bg-white py-2 pl-10 pr-10 text-sm
-          placeholder:text-gray-400
-          focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0
-          disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500
-          transition-all duration-200
-          ${isSearching ? "ring-2 ring-blue-200" : ""}
-        `}
+        type="search"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { if (timerRef.current) clearTimeout(timerRef.current); onSearch(value); setIsPending(false) } }}
         placeholder={placeholder}
-        value={searchTerm}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
         aria-label="Search tasks"
+        className="h-9 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-8 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
       />
-
-      {/* Clear button (only visible when there's text) */}
-      {searchTerm && (
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-          <button
-            type="button"
-            onClick={handleClear}
-            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Clear search"
-          >
-            <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      {/* Loading indicator (optional, shows when debouncing) */}
-      {isSearching && (
-        <div className="absolute inset-y-0 right-10 flex items-center pr-3">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500"></div>
-        </div>
+      {value && (
+        <button onClick={clear} className="absolute inset-y-0 right-2.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors" aria-label="Clear search">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       )}
     </div>
-  );
+  )
 }

@@ -55,13 +55,13 @@ const PRIORITY_LEVELS = [
     value: "medium",
     label: "Medium",
     description: "Normal priority",
-    color: "text-blue-700",
-    bgColor: "bg-blue-100",
-    hoverBg: "hover:bg-blue-200",
-    activeBg: "bg-blue-600",
+    color: "text-teal-700",
+    bgColor: "bg-teal-100",
+    hoverBg: "hover:bg-teal-200",
+    activeBg: "bg-teal-600",
     activeText: "text-white",
-    borderColor: "border-blue-300",
-    activeBorder: "border-blue-600",
+    borderColor: "border-teal-300",
+    activeBorder: "border-teal-600",
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path

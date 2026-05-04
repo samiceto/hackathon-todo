@@ -160,7 +160,7 @@ export default function RecurrenceInput({
                 px-4 py-2 text-sm font-medium rounded-md border transition-colors
                 ${
                   isPresetSelected(preset.value)
-                    ? "bg-blue-600 text-white border-blue-600"
+                    ? "bg-teal-600 text-white border-teal-600"
                     : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                 }
               `}
@@ -177,7 +177,7 @@ export default function RecurrenceInput({
         <button
           type="button"
           onClick={() => setCustomMode(!customMode)}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
         >
           {customMode ? "Hide" : "Show"} custom recurrence rule
         </button>
@@ -197,7 +197,7 @@ export default function RecurrenceInput({
                 ${
                   validationError
                     ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                    : "border-gray-300 dark:border-gray-600 focus:ring-teal-500"
                 }
                 focus:outline-none focus:ring-2
               `}

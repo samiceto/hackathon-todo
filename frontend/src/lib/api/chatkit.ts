@@ -16,12 +16,11 @@ export interface ChatMessage {
 }
 
 export interface SendMessageRequest {
-  thread_id?: string
+  conversation_id?: number
   message: string
 }
 
 export interface SendMessageResponse {
-  thread_id: string
   message: string
   conversation_id?: number
 }
@@ -31,7 +30,7 @@ export interface SendMessageResponse {
  */
 export async function sendChatMessage(
   message: string,
-  threadId?: string
+  conversationId?: number
 ): Promise<SendMessageResponse> {
   const token = authClient.getToken()
 
@@ -46,7 +45,7 @@ export async function sendChatMessage(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      thread_id: threadId,
+      conversation_id: conversationId ?? null,
       message: message,
     }),
   })
@@ -64,8 +63,9 @@ export async function sendChatMessage(
  */
 export async function* streamChatResponse(
   message: string,
-  threadId?: string,
-  language?: string
+  conversationId?: number,
+  language?: string,
+  onConversationId?: (id: number) => void
 ): AsyncGenerator<string, void, unknown> {
   const token = authClient.getToken()
 
@@ -81,7 +81,7 @@ export async function* streamChatResponse(
       Accept: 'text/event-stream',
     },
     body: JSON.stringify({
-      thread_id: threadId,
+      conversation_id: conversationId ?? null,
       message: message,
       language: language || 'en',
     }),
@@ -119,6 +119,9 @@ export async function* streamChatResponse(
           }
           try {
             const parsed = JSON.parse(data)
+            if (parsed.done && parsed.conversation_id && onConversationId) {
+              onConversationId(parsed.conversation_id)
+            }
             if (parsed.content) {
               yield parsed.content
             }
@@ -216,7 +219,8 @@ export async function listConversations(): Promise<
 
 export const chatkitApi = {
   sendMessage: sendChatMessage,
-  streamResponse: streamChatResponse,
+  streamResponse: (message: string, conversationId?: number, language?: string, onConversationId?: (id: number) => void) =>
+    streamChatResponse(message, conversationId, language, onConversationId),
   getHistory: getConversationHistory,
   createConversation,
   listConversations,

@@ -61,29 +61,25 @@ async def chat_endpoint(
     Returns:
         StreamingResponse with text/event-stream
     """
-    try:
-        async def event_generator():
-            """Generate SSE events from chat service."""
+    async def event_generator():
+        try:
             async for chunk in chat_service.process_message(
                 user_id=current_user["user_id"],
                 message=request.message,
                 conversation_id=request.conversation_id,
                 language=request.language
             ):
-                # Format as SSE
                 yield f"data: {json.dumps(chunk)}\n\n"
+        except Exception as e:
+            error_chunk = {"content": f"Sorry, I encountered an error: {str(e)}", "done": True, "error": True}
+            yield f"data: {json.dumps(error_chunk)}\n\n"
 
-        return StreamingResponse(
-            event_generator(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"  # Disable nginx buffering
-            }
-        )
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )

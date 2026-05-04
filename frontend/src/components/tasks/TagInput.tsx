@@ -163,7 +163,7 @@ export default function TagInput({
             ${
               error
                 ? "border-red-500 focus-within:ring-red-500"
-                : "focus-within:ring-blue-500"
+                : "focus-within:ring-teal-500"
             }
             ${isMaxTagsReached ? "opacity-75" : ""}
             transition-colors
@@ -176,10 +176,10 @@ export default function TagInput({
                 key={tag}
                 className="
                   inline-flex items-center gap-1 px-2 py-1
-                  bg-blue-100 dark:bg-blue-900/30
-                  text-blue-700 dark:text-blue-300
+                  bg-teal-100 dark:bg-teal-900/30
+                  text-teal-700 dark:text-teal-300
                   text-sm font-medium rounded-md
-                  border border-blue-300 dark:border-blue-700
+                  border border-teal-300 dark:border-teal-700
                 "
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -195,8 +195,8 @@ export default function TagInput({
                   type="button"
                   onClick={() => removeTag(tag)}
                   className="
-                    ml-1 text-blue-600 dark:text-blue-400
-                    hover:text-blue-800 dark:hover:text-blue-200
+                    ml-1 text-teal-600 dark:text-teal-400
+                    hover:text-teal-800 dark:hover:text-teal-200
                     transition-colors
                   "
                   aria-label={`Remove ${tag} tag`}
@@ -246,7 +246,7 @@ export default function TagInput({
                 className="
                   w-full px-3 py-2 text-left
                   text-sm text-gray-900 dark:text-gray-100
-                  hover:bg-blue-50 dark:hover:bg-blue-900/30
+                  hover:bg-teal-50 dark:hover:bg-teal-900/30
                   transition-colors
                   flex items-center gap-2
                 "

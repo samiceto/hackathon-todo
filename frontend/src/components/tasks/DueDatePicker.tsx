@@ -111,7 +111,7 @@ export default function DueDatePicker({
             ${
               isOverdue
                 ? "border-red-300 focus:ring-red-500"
-                : "focus:ring-blue-500"
+                : "focus:ring-teal-500"
             }
             transition-colors
           `}
@@ -145,7 +145,7 @@ export default function DueDatePicker({
               text-gray-400 hover:text-gray-600
               hover:bg-gray-100 dark:hover:bg-gray-700
               transition-colors
-              focus:outline-none focus:ring-2 focus:ring-blue-500
+              focus:outline-none focus:ring-2 focus:ring-teal-500
             "
             aria-label="Clear due date"
           >

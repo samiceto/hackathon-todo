@@ -8,7 +8,7 @@ Provides data validation and serialization for task endpoints.
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_serializer, field_validator
 
 from ..services.recurrence_service import RecurrenceService
 
@@ -46,6 +46,16 @@ class TaskResponse(BaseModel):
     next_occurrence: Optional[datetime] = Field(None, description="Next occurrence time for recurring tasks (optional)")
 
     model_config = {"from_attributes": True}
+
+    @field_serializer('created_at', 'updated_at')
+    def serialize_utc(self, v: datetime) -> str:
+        return v.isoformat() + 'Z' if v.tzinfo is None else v.isoformat()
+
+    @field_serializer('due_date', 'next_occurrence')
+    def serialize_utc_optional(self, v: Optional[datetime]) -> Optional[str]:
+        if v is None:
+            return None
+        return v.isoformat() + 'Z' if v.tzinfo is None else v.isoformat()
 
 
 class TaskListResponse(BaseModel):

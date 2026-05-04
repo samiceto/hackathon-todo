@@ -35,7 +35,7 @@ class ChatService:
     def __init__(self):
         """Initialize chat service with OpenAI client."""
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = "gpt-4"  # or "gpt-3.5-turbo" for faster responses
+        self.model = "gpt-3.5-turbo"
 
         # Define available functions for OpenAI
         self.functions = [

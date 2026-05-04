@@ -528,3 +528,7 @@ Built with:
 ---
 
 **Last Updated**: 2026-02-09 (Step 5 - User Stories 1-9 Complete: Advanced Features + Event-Driven Architecture + Cloud Deployment)
+
+ # After cloning:                                                                                         cp backend/api/.env.example backend/api/.env              
+  cp frontend/.env.local.example frontend/.env.local
+  # Edit both files with real credentials

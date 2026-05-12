@@ -1,0 +1,176 @@
+# Minikube development environment overrides
+# Use with: helm install todo-app ./helm/todo-app -f values-dev.yaml
+
+# Global configuration
+global:
+  environment: development
+
+# Backend configuration overrides
+backend:
+  # Reduce replicas for local development
+  replicas: 1
+
+  # Local image configuration
+  image:
+    repository: todo-backend
+    tag: latest
+    pullPolicy: Never  # Use local images only (built with minikube docker-env)
+
+  # NodePort service for external access (needed for browser-based frontend)
+  service:
+    type: NodePort
+    port: 8000
+    targetPort: 8000
+    nodePort: 30001  # Access backend at http://<minikube-ip>:30001
+
+  # Development configuration
+  config:
+    corsOrigins: "http://localhost:3000,http://localhost:8000,http://localhost:8080"
+    databaseUrl: "postgressql url here"
+
+    logLevel: "debug"
+
+  # Secrets must be provided via --set flags:
+  # helm upgrade todo-app ./helm/todo-app -f helm/todo-app/values-dev.yaml \
+  #   --set backend.secrets.openaiApiKey=<YOUR_OPENAI_KEY>
+  secrets:
+    openaiApiKey: "your-api-key-here"
+    betterAuthSecret: "better auth secret here"
+
+# Frontend configuration overrides
+frontend:
+  # Reduce replicas for local development
+  replicas: 1
+
+  # Local image configuration
+  image:
+    repository: todo-frontend
+    tag: latest
+    pullPolicy: Never  # Use local images only
+
+  # NodePort service for external access from host machine
+  service:
+    type: NodePort
+    port: 3000
+    targetPort: 3000
+    nodePort: 30000  # Access frontend at http://<minikube-ip>:30000
+
+  # Development configuration
+  config:
+    nextPublicApiUrl: "http://localhost:8000"  # Backend via port-forward on 8000
+    nextPublicOpenaiDomainKey: ""  # Provide if needed
+
+# Reminder Service configuration (Step 5)
+reminderService:
+  # Disabled: requires Dapr (set dapr.enabled: true to re-enable)
+  enabled: false
+
+  # Single replica for local development
+  replicaCount: 1
+
+  # Local image configuration
+  image:
+    repository: todo-reminder-service
+    tag: latest
+    pullPolicy: Never  # Use local images only
+
+  # Service configuration
+  service:
+    type: ClusterIP  # Internal service only
+    port: 8001
+
+  # Resource limits for local development
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+  # Development logging
+  logLevel: "DEBUG"
+
+  # Security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+
+# Database configuration
+database:
+  secretName: "todo-app-backend-secrets"  # References the backend secret containing DATABASE_URL
+
+# Ingress disabled for Minikube
+ingress:
+  enabled: false
+
+# Autoscaling disabled for Minikube
+autoscaling:
+  enabled: false
+
+# Pod disruption budget disabled for Minikube
+podDisruptionBudget:
+  enabled: false
+
+# Dapr configuration for Minikube development (T086)
+dapr:
+  enabled: false
+  logLevel: "debug"  # Verbose logging for local development
+
+  # Pub/Sub component configuration (Kafka/Redpanda)
+  pubsub:
+    name: pubsub-kafka
+    type: pubsub.kafka
+    version: v1
+    metadata:
+      - name: brokers
+        value: "redpanda:9092"  # Local Redpanda broker for Minikube
+      - name: authType
+        value: "none"  # No authentication for local development
+      - name: consumerGroup
+        value: "todo-app-group"
+      - name: clientID
+        value: "todo-app-client"
+
+  # State Store component configuration (Redis)
+  statestore:
+    name: statestore-redis
+    type: state.redis
+    version: v1
+    metadata:
+      - name: redisHost
+        value: "redis:6379"  # Local Redis for Minikube (matches service name in redis.yaml)
+      - name: redisPassword
+        value: ""  # No password for local development
+      - name: actorStateStore
+        value: "true"
+
+  # Cron Binding component configuration
+  cronBinding:
+    name: cron-reminder-processor
+    type: bindings.cron
+    version: v1
+    metadata:
+      - name: schedule
+        value: "*/1 * * * *"  # Every 1 minute
+      - name: direction
+        value: "input"
+
+  # Secrets Store component configuration (Kubernetes Secrets)
+  secrets:
+    name: kubernetes-secrets
+    type: secretstores.kubernetes
+    version: v1
+    metadata:
+      - name: vaultName
+        value: ""  # Not used for Kubernetes secrets
+      - name: defaultNamespace
+        value: "default"  # Kubernetes namespace for secrets

@@ -1,0 +1,245 @@
+# AWS k3s production environment configuration
+# Use with: helm install todo-app ./helm/todo-app -f values-prod-aws.yaml
+
+# Global configuration
+global:
+  environment: production
+
+# Backend configuration
+backend:
+  # Single replica for cost optimization (scale up as needed)
+  replicas: 1
+
+  # Docker Hub images (replace with your username)
+  image:
+    repository: <your-dockerhub-username>/todo-backend
+    tag: latest
+    pullPolicy: Always  # Always pull latest from Docker Hub
+
+  # NodePort service for external access via Elastic IP
+  service:
+    type: NodePort
+    port: 8000
+    targetPort: 8000
+    nodePort: 30001  # Access backend at http://<ELASTIC_IP>:30001
+
+  # Production resource limits
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+  # Health check configuration
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+
+  # Production configuration
+  config:
+    corsOrigins: "http://<ELASTIC_IP>:30000,https://<your-domain>"  # Update with your domain
+    databaseUrl: "postgresql://neondb_owner:npg_QVsP5gmjC4wb@ep-snowy-cell-a4068rur-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    logLevel: "info"
+
+  # Secrets (provide via --set or Kubernetes secrets)
+  secrets:
+    openaiApiKey: ""  # Provide via --set backend.secrets.openaiApiKey=sk-...
+    betterAuthSecret: "uwOPm1ir2FvGcIcJoOGyub2FQPQPysvC"  # Change in production!
+
+# Frontend configuration
+frontend:
+  # Single replica for cost optimization
+  replicas: 1
+
+  # Docker Hub images
+  image:
+    repository: <your-dockerhub-username>/todo-frontend
+    tag: latest
+    pullPolicy: Always
+
+  # NodePort service for external access
+  service:
+    type: NodePort
+    port: 3000
+    targetPort: 3000
+    nodePort: 30000  # Access frontend at http://<ELASTIC_IP>:30000
+
+  # Production resource limits
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Health check configuration
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+
+  # Production configuration
+  config:
+    nextPublicApiUrl: "http://<ELASTIC_IP>:30001"  # Update with your Elastic IP
+    nextPublicOpenaiDomainKey: ""  # Provide if using OpenAI ChatKit
+
+# Reminder Service configuration (Step 5)
+reminderService:
+  # Enable reminder service
+  enabled: true
+
+  # Single replica for cost optimization
+  replicaCount: 1
+
+  # Docker Hub images
+  image:
+    repository: <your-dockerhub-username>/todo-reminder-service
+    tag: latest
+    pullPolicy: Always
+
+  # Service configuration (internal only)
+  service:
+    type: ClusterIP
+    port: 8001
+
+  # Production resource limits
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Production logging
+  logLevel: "INFO"
+
+  # Security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+
+# Database configuration
+database:
+  secretName: "backend-secret"  # References the backend secret containing DATABASE_URL
+
+# Ingress disabled (using NodePort for simplicity)
+ingress:
+  enabled: false
+
+# Autoscaling disabled (single node cluster)
+autoscaling:
+  enabled: false
+
+# Pod disruption budget disabled (single node cluster)
+podDisruptionBudget:
+  enabled: false
+
+# Dapr configuration for AWS k3s
+dapr:
+  enabled: true
+  logLevel: "info"  # Production logging
+
+  # Pub/Sub component configuration (Self-hosted Redpanda)
+  pubsub:
+    name: pubsub-kafka
+    type: pubsub.kafka
+    version: v1
+    metadata:
+      - name: brokers
+        value: "redpanda:9092"  # Self-hosted Redpanda in cluster
+      - name: authType
+        value: "none"  # No authentication for self-hosted
+      - name: consumerGroup
+        value: "todo-app-group"
+      - name: clientID
+        value: "todo-app-client"
+      - name: initialOffset
+        value: "oldest"
+      - name: maxMessageBytes
+        value: "1048576"
+
+  # State Store component configuration (Self-hosted Redis)
+  statestore:
+    name: statestore-redis
+    type: state.redis
+    version: v1
+    metadata:
+      - name: redisHost
+        value: "redis:6379"  # Self-hosted Redis in cluster
+      - name: redisPassword
+        value: ""  # No password for self-hosted
+      - name: actorStateStore
+        value: "true"
+      - name: ttlInSeconds
+        value: "3600"
+
+  # Cron Binding component configuration
+  cronBinding:
+    name: cron-reminder-processor
+    type: bindings.cron
+    version: v1
+    metadata:
+      - name: schedule
+        value: "*/1 * * * *"  # Every 1 minute
+      - name: direction
+        value: "input"
+
+  # Secrets Store component configuration (Kubernetes Secrets)
+  secrets:
+    name: kubernetes-secrets
+    type: secretstores.kubernetes
+    version: v1
+    metadata:
+      - name: defaultNamespace
+        value: "default"
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Security context defaults
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000

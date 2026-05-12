@@ -1,0 +1,31 @@
+# Backend ConfigMap Specification
+# Feature: 004-k8s-deployment
+# Resource Type: Kubernetes ConfigMap
+# Purpose: Store non-sensitive backend configuration
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "todo-app.fullname" . }}-backend-config
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+data:
+  # CORS configuration
+  CORS_ORIGINS: {{ .Values.backend.config.corsOrigins | quote }}
+
+  # Database connection string (non-sensitive part)
+  # Note: Full DATABASE_URL should be in Secret if it contains credentials
+  DATABASE_URL: {{ .Values.backend.config.databaseUrl | quote }}
+
+  # Logging configuration
+  LOG_LEVEL: {{ .Values.backend.config.logLevel | default "info" | quote }}
+
+  # Application settings
+  ENVIRONMENT: {{ .Values.backend.config.environment | default "production" | quote }}
+
+  # API configuration
+  API_VERSION: {{ .Values.backend.config.apiVersion | default "v1" | quote }}
+
+  # MCP Server configuration (if applicable)
+  MCP_SERVER_ENABLED: {{ .Values.backend.config.mcpServerEnabled | default "true" | quote }}

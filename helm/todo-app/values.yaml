@@ -1,0 +1,153 @@
+# Default values for todo-app Helm chart
+# This is production-ready configuration
+# Override these values for different environments using -f values-dev.yaml or --set flags
+
+# Global configuration
+global:
+  # Default environment
+  environment: production
+
+# Backend configuration (FastAPI application)
+backend:
+  # Number of replicas (pods)
+  replicas: 2
+
+  # Container image configuration
+  image:
+    repository: todo-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Service configuration
+  service:
+    type: ClusterIP  # Internal cluster access only
+    port: 8000
+    targetPort: 8000
+
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Health check configuration
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+
+  # Non-sensitive configuration (ConfigMap)
+  config:
+    corsOrigins: "https://example.com"
+    databaseUrl: "postgresql://user:pass@neon-host.neon.tech/todo_db"
+    logLevel: "info"
+
+  # Sensitive configuration (Secret)
+  # IMPORTANT: Do NOT commit actual secrets to Git
+  # These should be provided via --set flags or separate secrets.yaml file
+  secrets:
+    openaiApiKey: ""  # Provide via --set backend.secrets.openaiApiKey=sk-...
+    betterAuthSecret: ""  # Provide via --set backend.secrets.betterAuthSecret=...
+
+# Frontend configuration (Next.js application)
+frontend:
+  # Number of replicas (pods)
+  replicas: 2
+
+  # Container image configuration
+  image:
+    repository: todo-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Service configuration
+  service:
+    type: ClusterIP  # Production uses Ingress, not NodePort
+    port: 3000
+    targetPort: 3000
+
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+  # Health check configuration
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+
+  # Non-sensitive configuration (ConfigMap)
+  config:
+    nextPublicApiUrl: "http://todo-app-backend:8000"
+    nextPublicOpenaiDomainKey: ""  # Provide if using OpenAI ChatKit
+
+# Ingress configuration (for production - Step 5)
+ingress:
+  enabled: false  # Disabled for Minikube (Step 4)
+  className: ""
+  annotations: {}
+  hosts:
+    - host: todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Autoscaling configuration (for production - Step 5)
+autoscaling:
+  enabled: false  # Disabled for Minikube (Step 4)
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budget (for production - Step 5)
+podDisruptionBudget:
+  enabled: false  # Disabled for Minikube (Step 4)
+  minAvailable: 1
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Security context defaults
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000

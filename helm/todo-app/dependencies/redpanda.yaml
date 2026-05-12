@@ -1,0 +1,159 @@
+---
+# Redpanda StatefulSet for local development
+# Replaces Kafka for Step 5 event-driven architecture
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redpanda
+  namespace: default
+  labels:
+    app: redpanda
+    tier: messaging
+spec:
+  serviceName: redpanda-headless
+  replicas: 1  # Single replica for local dev
+  selector:
+    matchLabels:
+      app: redpanda
+  template:
+    metadata:
+      labels:
+        app: redpanda
+    spec:
+      containers:
+      - name: redpanda
+        image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
+        ports:
+        - containerPort: 9092
+          name: kafka-api
+        - containerPort: 8081
+          name: http-api
+        - containerPort: 3030
+          name: admin-api
+        command:
+        - /bin/sh
+        - -c
+        - |
+          rpk redpanda start \
+          --mode dev-container \
+          --kafka-addr 0.0.0.0:9092 \
+          --advertise-kafka-addr $POD_IP:9092
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - rpk cluster info
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - rpk cluster health
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: datadir
+          mountPath: /var/lib/redpanda/data
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+---
+# Redpanda Service to expose Kafka API
+apiVersion: v1
+kind: Service
+metadata:
+  name: redpanda
+  namespace: default
+  labels:
+    app: redpanda
+spec:
+  selector:
+    app: redpanda
+  ports:
+  - name: kafka-api
+    port: 9092
+    targetPort: 9092
+    protocol: TCP
+  - name: http-api
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  - name: admin-api
+    port: 3030
+    targetPort: 3030
+    protocol: TCP
+  type: ClusterIP
+---
+# Headless service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: redpanda-headless
+  namespace: default
+  labels:
+    app: redpanda
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  selector:
+    app: redpanda
+  clusterIP: None
+  ports:
+  - port: 9093
+    name: internal
+---
+# Redpanda Init Job to initialize topics
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redpanda-init-topics
+  namespace: default
+  labels:
+    app: redpanda-init
+spec:
+  template:
+    spec:
+      containers:
+      - name: topic-creator
+        image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
+        command:
+        - /bin/sh
+        - -c
+        - |
+          sleep 30
+          echo "Creating Dapr pubsub topics..."
+          rpk topic create dapr-pubsub --partitions 1 --replicas 1
+          rpk topic create task.created --partitions 1 --replicas 1
+          rpk topic create task.updated --partitions 1 --replicas 1
+          rpk topic create task.completed --partitions 1 --replicas 1
+          rpk topic create task.deleted --partitions 1 --replicas 1
+          rpk topic create reminder.due --partitions 1 --replicas 1
+          echo "Topics created successfully"
+          rpk topic list
+        env:
+        - name: REDPANDA_BROKERS
+          value: "redpanda:9092"
+      restartPolicy: OnFailure
+  backoffLimit: 4

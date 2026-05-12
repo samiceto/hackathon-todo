@@ -8,63 +8,33 @@ import { validateSignupForm } from '@/lib/utils/validators'
 
 export default function SignupForm() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-  })
+  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [apiError, setApiError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // Clear errors when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[field]
-        return newErrors
-      })
-    }
+    if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n })
     if (apiError) setApiError('')
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setApiError('')
-
-    // Validate form
-    const validationErrors = validateSignupForm(
-      formData.email,
-      formData.password,
-      formData.confirmPassword
-    )
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      return
-    }
-
+    const validationErrors = validateSignupForm(formData.email, formData.password, formData.confirmPassword)
+    if (Object.keys(validationErrors).length > 0) { setErrors(validationErrors); return }
     setIsLoading(true)
-
     try {
-      await authClient.signup({
-        email: formData.email,
-        password: formData.password,
-      })
-
-      // Redirect to tasks page on success
+      await authClient.signup({ email: formData.email, password: formData.password })
       router.push('/tasks')
     } catch (error: any) {
       setIsLoading(false)
-
-      // Handle specific error cases
-      if (error.message.includes('already registered')) {
-        setApiError('This email is already registered. Please sign in instead.')
-      } else if (error.message.includes('Invalid email')) {
+      if (error.message?.includes('already registered')) {
+        setApiError('This email is already registered. Sign in instead.')
+      } else if (error.message?.includes('Invalid email')) {
         setApiError('Please provide a valid email address.')
       } else {
         setApiError('Something went wrong. Please try again.')
@@ -72,210 +42,98 @@ export default function SignupForm() {
     }
   }
 
+  const EyeIcon = ({ show, onClick }: { show: boolean; onClick: () => void }) => (
+    <button type="button" onClick={onClick}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-colors cursor-pointer"
+      aria-label={show ? 'Hide password' : 'Show password'}>
+      {show ? (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      )}
+    </button>
+  )
+
+  const fieldCls = (field: string) =>
+    `w-full h-11 px-3.5 pr-10 rounded-xl border bg-white text-sm text-gray-900 placeholder:text-gray-400 transition-all duration-150 outline-none font-medium ${
+      errors[field]
+        ? 'border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-100'
+        : 'border-gray-200 hover:border-teal-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-100'
+    }`
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 w-full">
-      {/* API Error Message */}
+    <form onSubmit={handleSubmit} className="space-y-4">
       {apiError && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 animate-slide-up">
-          <div className="flex items-start gap-3">
-            <svg
-              className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <p className="text-sm text-red-800 font-medium">{apiError}</p>
-          </div>
+        <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl animate-slide-down">
+          <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <p className="text-sm text-red-700">{apiError}</p>
         </div>
       )}
 
-      {/* Email Field */}
-      <div className="space-y-2">
-        <label
-          htmlFor="email"
-          className="block text-sm font-semibold text-gray-700"
-        >
-          Email address
-        </label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          value={formData.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          className={`w-full px-4 py-3 rounded-xl border-2 bg-white transition-all duration-200
-            ${
-              errors.email
-                ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100'
-                : 'border-gray-200 focus:border-primary-600 focus:ring-4 focus:ring-primary-100'
-            }
-            placeholder:text-gray-400 text-gray-900
-            outline-none`}
-          placeholder="you@example.com"
+      <div className="space-y-1.5">
+        <label htmlFor="email" className="block text-sm font-semibold text-gray-700">Email</label>
+        <input id="email" type="email" autoComplete="email" value={formData.email}
+          onChange={(e) => handleChange('email', e.target.value)} placeholder="you@example.com"
           aria-invalid={!!errors.email}
-          aria-describedby={errors.email ? 'email-error' : undefined}
+          className={`w-full h-11 px-3.5 rounded-xl border bg-white text-sm text-gray-900 placeholder:text-gray-400 transition-all duration-150 outline-none font-medium ${
+            errors.email
+              ? 'border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-100'
+              : 'border-gray-200 hover:border-teal-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-100'
+          }`}
         />
-        {errors.email && (
-          <p id="email-error" className="text-sm text-red-600 animate-fade-in">
-            {errors.email}
-          </p>
-        )}
+        {errors.email && <p className="text-xs text-red-600 animate-fade-in">{errors.email}</p>}
       </div>
 
-      {/* Password Field */}
-      <div className="space-y-2">
-        <label
-          htmlFor="password"
-          className="block text-sm font-semibold text-gray-700"
-        >
-          Password
-        </label>
+      <div className="space-y-1.5">
+        <label htmlFor="password" className="block text-sm font-semibold text-gray-700">Password</label>
         <div className="relative">
-          <input
-            id="password"
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="new-password"
-            value={formData.password}
-            onChange={(e) => handleChange('password', e.target.value)}
-            className={`w-full px-4 py-3 pr-12 rounded-xl border-2 bg-white transition-all duration-200
-              ${
-                errors.password
-                  ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100'
-                  : 'border-gray-200 focus:border-primary-600 focus:ring-4 focus:ring-primary-100'
-              }
-              placeholder:text-gray-400 text-gray-900
-              outline-none`}
-            placeholder="At least 8 characters"
-            aria-invalid={!!errors.password}
-            aria-describedby={errors.password ? 'password-error' : undefined}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            )}
-          </button>
+          <input id="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password"
+            value={formData.password} onChange={(e) => handleChange('password', e.target.value)}
+            placeholder="At least 8 characters" aria-invalid={!!errors.password}
+            className={fieldCls('password')} />
+          <EyeIcon show={showPassword} onClick={() => setShowPassword(!showPassword)} />
         </div>
-        {errors.password && (
-          <p id="password-error" className="text-sm text-red-600 animate-fade-in">
-            {errors.password}
-          </p>
-        )}
+        {errors.password && <p className="text-xs text-red-600 animate-fade-in">{errors.password}</p>}
       </div>
 
-      {/* Confirm Password Field */}
-      <div className="space-y-2">
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-semibold text-gray-700"
-        >
-          Confirm password
-        </label>
+      <div className="space-y-1.5">
+        <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700">Confirm password</label>
         <div className="relative">
-          <input
-            id="confirmPassword"
-            type={showConfirmPassword ? 'text' : 'password'}
-            autoComplete="new-password"
-            value={formData.confirmPassword}
-            onChange={(e) => handleChange('confirmPassword', e.target.value)}
-            className={`w-full px-4 py-3 pr-12 rounded-xl border-2 bg-white transition-all duration-200
-              ${
-                errors.confirmPassword
-                  ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100'
-                  : 'border-gray-200 focus:border-primary-600 focus:ring-4 focus:ring-primary-100'
-              }
-              placeholder:text-gray-400 text-gray-900
-              outline-none`}
-            placeholder="Confirm your password"
-            aria-invalid={!!errors.confirmPassword}
-            aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
-            aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-          >
-            {showConfirmPassword ? (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            )}
-          </button>
+          <input id="confirmPassword" type={showConfirm ? 'text' : 'password'} autoComplete="new-password"
+            value={formData.confirmPassword} onChange={(e) => handleChange('confirmPassword', e.target.value)}
+            placeholder="Confirm your password" aria-invalid={!!errors.confirmPassword}
+            className={fieldCls('confirmPassword')} />
+          <EyeIcon show={showConfirm} onClick={() => setShowConfirm(!showConfirm)} />
         </div>
-        {errors.confirmPassword && (
-          <p id="confirmPassword-error" className="text-sm text-red-600 animate-fade-in">
-            {errors.confirmPassword}
-          </p>
-        )}
+        {errors.confirmPassword && <p className="text-xs text-red-600 animate-fade-in">{errors.confirmPassword}</p>}
       </div>
 
-      {/* Submit Button */}
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full px-6 py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl
-          transition-all duration-200
-          disabled:opacity-60 disabled:cursor-not-allowed
-          focus:outline-none focus:ring-4 focus:ring-primary-100
-          shadow-lg shadow-primary-600/20 hover:shadow-xl hover:shadow-primary-600/30
-          hover:-translate-y-0.5
-          flex items-center justify-center gap-2"
+        className="w-full h-11 mt-1 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-sm font-bold rounded-xl transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-px cursor-pointer"
       >
         {isLoading ? (
           <>
-            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
+            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Creating account...
+            Creating account…
           </>
-        ) : (
-          'Create account'
-        )}
+        ) : 'Create account'}
       </button>
 
-      {/* Sign In Link */}
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-500">
         Already have an account?{' '}
-        <Link
-          href="/signin"
-          className="font-semibold text-primary-600 hover:text-primary-700 transition-colors"
-        >
-          Sign in
-        </Link>
+        <Link href="/signin" className="font-semibold text-teal-600 hover:text-teal-700 transition-colors">Sign in</Link>
       </p>
     </form>
   )

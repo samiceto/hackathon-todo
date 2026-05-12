@@ -1,0 +1,137 @@
+# Production environment overrides
+# Use with: helm install todo-app ./helm/todo-app -f values-prod.yaml
+# WARNING: This is a placeholder for Step 5 (cloud deployment)
+
+# Global configuration
+global:
+  environment: production
+
+# Backend configuration overrides
+backend:
+  # Production replicas (auto-scaling in Step 5)
+  replicas: 2
+
+  # Production image configuration
+  image:
+    repository: <registry-url>/todo-backend  # Replace with actual registry
+    tag: "1.0.0"  # Use semantic versioning, not latest
+    pullPolicy: IfNotPresent
+
+  # ClusterIP service (Ingress handles external access)
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+
+  # Production configuration
+  config:
+    corsOrigins: "https://todo-app.example.com"  # Replace with actual domain
+    databaseUrl: ""  # Provide via secret or external secret management
+    logLevel: "info"
+
+  # Secrets MUST be provided via external secret management
+  # Never commit production secrets to Git
+  secrets:
+    openaiApiKey: ""  # Provide via external secret manager (AWS Secrets Manager, HashiCorp Vault, etc.)
+    betterAuthSecret: ""  # Provide via external secret manager
+
+# Frontend configuration overrides
+frontend:
+  # Production replicas (auto-scaling in Step 5)
+  replicas: 2
+
+  # Production image configuration
+  image:
+    repository: <registry-url>/todo-frontend  # Replace with actual registry
+    tag: "1.0.0"  # Use semantic versioning, not latest
+    pullPolicy: IfNotPresent
+
+  # ClusterIP service (Ingress handles external access)
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+
+  # Production configuration
+  config:
+    nextPublicApiUrl: "https://api.todo-app.example.com"  # Replace with actual API domain
+    nextPublicOpenaiDomainKey: ""  # Provide if using OpenAI ChatKit
+
+# Ingress configuration (for Step 5)
+ingress:
+  enabled: true
+  className: "nginx"  # Or "traefik", "alb", etc.
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # For HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: todo-app-frontend
+              port:
+                number: 3000
+    - host: api.todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: todo-app-backend
+              port:
+                number: 8000
+  tls:
+    - secretName: todo-app-tls
+      hosts:
+        - todo-app.example.com
+        - api.todo-app.example.com
+
+# Autoscaling configuration (for Step 5)
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budget (for Step 5)
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Service account
+serviceAccount:
+  create: true
+  annotations:
+    # Add cloud provider annotations here (e.g., for IAM roles)
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME
+  name: ""
+
+# Security context defaults (stricter for production)
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Network policy (for Step 5 - zero trust networking)
+networkPolicy:
+  enabled: false  # Enable in Step 5 for network segmentation
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+  egress:
+    - to:
+      - namespaceSelector: {}
+      ports:
+      - protocol: TCP
+        port: 443  # HTTPS for external APIs
+      - protocol: TCP
+        port: 5432  # PostgreSQL (Neon)

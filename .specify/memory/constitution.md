@@ -1,25 +1,36 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version Change: 1.0.0 → 2.0.0 (MAJOR)
-Modified Principles: None (Step 1 principles unchanged)
+Version Change: 4.0.0 → 5.0.0 (MAJOR)
+Modified Principles: None (Steps 1-4 principles unchanged)
 Added Sections:
-  - Complete "Step 2: Full-Stack Web Application" section
-  - Step 2-specific principles (VIII-XIII)
-  - Step 2 requirements and technology stack
-  - Step 2 workflow and quality gates
-  - JWT authentication architecture
+  - Complete "Step 5: Advanced Cloud Deployment" section
+  - Step 5-specific principles (XXIV-XXIX)
+  - Step 5 requirements and technology stack
+  - Step 5 workflow and quality gates
+  - Advanced task management features (recurring tasks, due dates, reminders, priorities, tags, search, filter, sort)
+  - Event-driven architecture with Kafka/alternative pub/sub
+  - Dapr distributed application runtime (Pub/Sub, State, Bindings, Secrets, Service Invocation)
+  - Multi-environment deployment (Minikube + Azure AKS/GCP GKE/Oracle Cloud)
+  - CI/CD pipeline automation with GitHub Actions
+  - Monitoring and logging infrastructure (Prometheus, Grafana, Zipkin/Jaeger, log aggregation)
+  - Reminder service for asynchronous reminder processing
+  - Managed cloud services (PostgreSQL, Kafka, Redis)
 Removed Sections: None
 Templates Status:
-  ✅ Constitution updated to v2.0.0
-  ⚠ plan-template.md: No changes required (structure supports both steps)
-  ⚠ spec-template.md: No changes required (user story format applies to both steps)
-  ⚠ tasks-template.md: No changes required (phase organization applies to both steps)
+  ✅ Constitution updated to v5.0.0
+  ⚠ plan-template.md: No changes required (structure supports all steps)
+  ⚠ spec-template.md: No changes required (user story format applies to all steps)
+  ⚠ tasks-template.md: No changes required (phase organization applies to all steps)
 Follow-up TODOs:
-  - Step 2 specifications will be created when starting Step 2 work
-  - Backend and frontend CLAUDE.md files exist and reference this constitution
-  - Monorepo structure already prepared in .spec-kit/config.yaml
-Version Bump Rationale: MAJOR bump - Adding Step 2 fundamentally extends project scope from console-only to full-stack web application with authentication, database persistence, and multi-user support. This represents a backward-incompatible expansion of requirements and technology stack.
+  - Step 5 specifications will be created when starting Step 5 work
+  - Event schemas will be documented in specs/events/
+  - Dapr components will be documented in specs/dapr/
+  - Cloud architecture will be documented in specs/cloud/
+  - Reminder service specifications will be in specs/services/reminder-service/
+  - CI/CD pipeline specifications will be in specs/cicd/
+  - Monitoring specifications will be in specs/monitoring/
+Version Bump Rationale: MAJOR bump - Adding Step 5 fundamentally transforms the application into a production-grade distributed system with advanced features (recurring tasks, reminders, priorities, tags, search, filter, sort), event-driven architecture (Kafka, Dapr), cloud deployment (AKS/GKE/OKE), CI/CD automation (GitHub Actions), and comprehensive observability (Prometheus, Grafana, distributed tracing). This represents a backward-incompatible expansion requiring new database schema (Task extensions, TaskTag, Reminder), new services (reminder-service), new infrastructure (Kafka, Redis, cloud Kubernetes), and new operational practices (CI/CD, monitoring, alerting).
 -->
 
 # Evolution of Todo - Project Constitution
@@ -552,6 +563,1122 @@ Before moving to Step 3, the following MUST be verified:
 
 ---
 
+## Step 3: AI-Powered Chatbot
+
+### Step 3 Overview
+
+**Objective**: Create an AI-powered chatbot interface for managing todos through natural language using MCP (Model Context Protocol) server architecture.
+
+**Development Approach**: Use the Agentic Dev Stack workflow: Write spec → Generate plan → Break into tasks → Implement via Claude Code. No manual coding allowed. We will review the process, prompts, and iterations to judge each phase and project.
+
+### Step 3 Principles
+
+#### XIV. Model Context Protocol (MCP) Architecture
+
+**AI agents MUST interact with the application through standardized MCP tools.**
+
+- Build MCP server using Official MCP SDK that exposes task operations as tools
+- MCP tools MUST be stateless and store state in the database
+- Each tool MUST have clear purpose, parameters, return values, and examples
+- Tools MUST enforce user authentication and data isolation
+- Agent uses MCP tools to perform all task operations (add, list, complete, delete, update)
+
+**MCP Tools Required**:
+- `add_task` - Create a new task
+- `list_tasks` - Retrieve tasks with optional filtering
+- `complete_task` - Mark a task as complete
+- `delete_task` - Remove a task
+- `update_task` - Modify task title or description
+
+**Rationale**: MCP provides a standardized interface for AI to interact with your app. This enables tool composition, testability, and future extensibility.
+
+#### XV. OpenAI Agents SDK Integration
+
+**AI logic MUST be implemented using OpenAI Agents SDK with proper agent and runner configuration.**
+
+- Use OpenAI Agents SDK for natural language understanding and agent behavior
+- Agent MUST be configured with MCP tools available for invocation
+- Runner MUST execute agent with conversation history context
+- Agent MUST understand natural language commands and map to appropriate tools
+- Agent MUST provide friendly confirmations after tool invocations
+- Error handling MUST be graceful with helpful user messages
+
+**Agent Behavior Specifications**:
+- Task Creation: When user mentions adding/creating/remembering → use `add_task`
+- Task Listing: When user asks to see/show/list tasks → use `list_tasks` with filter
+- Task Completion: When user says done/complete/finished → use `complete_task`
+- Task Deletion: When user says delete/remove/cancel → use `delete_task`
+- Task Update: When user says change/update/rename → use `update_task`
+- Always confirm actions with friendly response
+
+**Rationale**: OpenAI Agents SDK provides robust agent orchestration, tool calling, and conversation management capabilities.
+
+#### XVI. Stateless Conversational Architecture
+
+**Chat server MUST be stateless with all conversation state persisted in database.**
+
+- Stateless chat endpoint that persists conversation state to database
+- Server holds NO state between requests (ready for horizontal scaling)
+- Each request fetches conversation history from database
+- Each response stores new messages to database
+- Conversation context built fresh on every request
+
+**Conversation Flow (Stateless Request Cycle)**:
+1. Receive user message
+2. Fetch conversation history from database
+3. Build message array for agent (history + new message)
+4. Store user message in database
+5. Run agent with MCP tools
+6. Agent invokes appropriate MCP tool(s)
+7. Store assistant response in database
+8. Return response to client
+9. Server holds NO state (ready for next request)
+
+**Rationale**: Stateless architecture enables scalability (horizontal scaling), resilience (server restarts don't lose state), and testability (each request is independent).
+
+#### XVII. Conversational Database Models
+
+**Database MUST support conversation persistence with proper schema.**
+
+**Required Models**:
+
+| Model | Fields | Description |
+|-------|--------|-------------|
+| Task | user_id, id, title, description, completed, created_at, updated_at | Todo items (existing from Step 2) |
+| Conversation | user_id, id, created_at, updated_at | Chat session |
+| Message | user_id, id, conversation_id, role (user/assistant), content, created_at | Chat history |
+
+**Schema Requirements**:
+- Conversations belong to a user (user_id foreign key)
+- Messages belong to a conversation (conversation_id foreign key)
+- Messages have role: "user" or "assistant"
+- All models have timestamps (created_at, updated_at)
+- Proper indexes on foreign keys for performance
+
+**Rationale**: Structured conversation storage enables context retrieval, conversation resumption, and future features like conversation history browsing.
+
+#### XVIII. OpenAI ChatKit Frontend
+
+**Frontend MUST use OpenAI ChatKit for conversational UI.**
+
+- Use OpenAI ChatKit for chat interface components
+- ChatKit MUST be configured with domain allowlist for hosted deployment
+- Chat UI MUST send messages to backend `/api/{user_id}/chat` endpoint
+- Frontend MUST display conversation history and agent responses
+- UI MUST show tool invocations for transparency (optional but recommended)
+
+**ChatKit Configuration Requirements**:
+1. Deploy frontend to get production URL (Vercel, GitHub Pages, custom domain)
+2. Add domain to OpenAI's allowlist: https://platform.openai.com/settings/organization/security/domain-allowlist
+3. Get ChatKit domain key from OpenAI
+4. Configure environment variable: `NEXT_PUBLIC_OPENAI_DOMAIN_KEY`
+
+**Note**: Local development (`localhost`) typically works without domain allowlist configuration.
+
+**Rationale**: ChatKit provides production-ready chat UI components optimized for OpenAI agent interactions.
+
+### Step 3 Requirements & Constraints
+
+#### Functional Requirements (MANDATORY)
+
+Implement conversational interface for all Basic Level features:
+
+1. **Add Task via Chat** - "Add a task to buy groceries" → creates task
+2. **List Tasks via Chat** - "Show me all my tasks" → displays task list
+3. **Complete Task via Chat** - "Mark task 3 as complete" → toggles completion
+4. **Delete Task via Chat** - "Delete the meeting task" → removes task
+5. **Update Task via Chat** - "Change task 1 to 'Call mom tonight'" → updates task
+6. **Conversation Context** - Maintain conversation history across requests
+7. **Multi-Turn Conversations** - Handle follow-up questions and clarifications
+
+#### Technology Stack (MANDATORY)
+
+| Component | Technology |
+|-----------|-----------|
+| Frontend | OpenAI ChatKit |
+| Backend | Python FastAPI |
+| AI Framework | OpenAI Agents SDK |
+| MCP Server | Official MCP SDK |
+| ORM | SQLModel |
+| Database | Neon Serverless PostgreSQL |
+| Authentication | Better Auth (from Step 2) |
+| Spec-Driven | Claude Code + Spec-Kit Plus |
+
+#### Architecture Diagram
+
+```
+┌─────────────────┐     ┌──────────────────────────────────────────────┐     ┌─────────────────┐
+│                 │     │              FastAPI Server                   │     │                 │
+│                 │     │  ┌────────────────────────────────────────┐  │     │                 │
+│  ChatKit UI     │────▶│  │         Chat Endpoint                  │  │     │    Neon DB      │
+│  (Frontend)     │     │  │  POST /api/{user_id}/chat              │  │     │  (PostgreSQL)   │
+│                 │     │  └───────────────┬────────────────────────┘  │     │                 │
+│                 │     │                  │                           │     │  - tasks        │
+│                 │     │                  ▼                           │     │  - conversations│
+│                 │     │  ┌────────────────────────────────────────┐  │     │  - messages     │
+│                 │◀────│  │      OpenAI Agents SDK                 │  │     │                 │
+│                 │     │  │      (Agent + Runner)                  │  │     │                 │
+│                 │     │  └───────────────┬────────────────────────┘  │     │                 │
+│                 │     │                  │                           │     │                 │
+│                 │     │                  ▼                           │     │                 │
+│                 │     │  ┌────────────────────────────────────────┐  │────▶│                 │
+│                 │     │  │         MCP Server                     │  │     │                 │
+│                 │     │  │  (MCP Tools for Task Operations)       │  │◀────│                 │
+│                 │     │  └────────────────────────────────────────┘  │     │                 │
+└─────────────────┘     └──────────────────────────────────────────────┘     └─────────────────┘
+```
+
+#### Chat API Endpoint
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/{user_id}/chat` | Send message & get AI response | Yes |
+
+**Request Format**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| conversation_id | integer | No | Existing conversation ID (creates new if not provided) |
+| message | string | Yes | User's natural language message |
+
+**Response Format**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| conversation_id | integer | The conversation ID |
+| response | string | AI assistant's response |
+| tool_calls | array | List of MCP tools invoked |
+
+#### MCP Tools Specification
+
+**Tool: add_task**
+
+| Aspect | Details |
+|--------|---------|
+| Purpose | Create a new task |
+| Parameters | user_id (string, required), title (string, required), description (string, optional) |
+| Returns | task_id, status, title |
+| Example Input | `{"user_id": "ziakhan", "title": "Buy groceries", "description": "Milk, eggs, bread"}` |
+| Example Output | `{"task_id": 5, "status": "created", "title": "Buy groceries"}` |
+
+**Tool: list_tasks**
+
+| Aspect | Details |
+|--------|---------|
+| Purpose | Retrieve tasks from the list |
+| Parameters | user_id (string, required), status (string, optional: "all", "pending", "completed") |
+| Returns | Array of task objects |
+| Example Input | `{"user_id": "ziakhan", "status": "pending"}` |
+| Example Output | `[{"id": 1, "title": "Buy groceries", "completed": false}, ...]` |
+
+**Tool: complete_task**
+
+| Aspect | Details |
+|--------|---------|
+| Purpose | Mark a task as complete |
+| Parameters | user_id (string, required), task_id (integer, required) |
+| Returns | task_id, status, title |
+| Example Input | `{"user_id": "ziakhan", "task_id": 3}` |
+| Example Output | `{"task_id": 3, "status": "completed", "title": "Call mom"}` |
+
+**Tool: delete_task**
+
+| Aspect | Details |
+|--------|---------|
+| Purpose | Remove a task from the list |
+| Parameters | user_id (string, required), task_id (integer, required) |
+| Returns | task_id, status, title |
+| Example Input | `{"user_id": "ziakhan", "task_id": 2}` |
+| Example Output | `{"task_id": 2, "status": "deleted", "title": "Old task"}` |
+
+**Tool: update_task**
+
+| Aspect | Details |
+|--------|---------|
+| Purpose | Modify task title or description |
+| Parameters | user_id (string, required), task_id (integer, required), title (string, optional), description (string, optional) |
+| Returns | task_id, status, title |
+| Example Input | `{"user_id": "ziakhan", "task_id": 1, "title": "Buy groceries and fruits"}` |
+| Example Output | `{"task_id": 1, "status": "updated", "title": "Buy groceries and fruits"}` |
+
+#### Natural Language Command Examples
+
+| User Says | Agent Should |
+|-----------|--------------|
+| "Add a task to buy groceries" | Call add_task with title "Buy groceries" |
+| "Show me all my tasks" | Call list_tasks with status "all" |
+| "What's pending?" | Call list_tasks with status "pending" |
+| "Mark task 3 as complete" | Call complete_task with task_id 3 |
+| "Delete the meeting task" | Call list_tasks first, then delete_task |
+| "Change task 1 to 'Call mom tonight'" | Call update_task with new title |
+| "I need to remember to pay bills" | Call add_task with title "Pay bills" |
+| "What have I completed?" | Call list_tasks with status "completed" |
+
+#### Environment Variables (Step 3 Required)
+
+**Backend (.env)** - Add to existing Step 2 variables:
+```
+OPENAI_API_KEY=<openai-api-key>
+MCP_SERVER_URL=http://localhost:9000  # If MCP runs separately
+```
+
+**Frontend (.env.local)** - Add to existing Step 2 variables:
+```
+NEXT_PUBLIC_OPENAI_DOMAIN_KEY=<domain-key-from-openai>
+```
+
+#### Project Structure (Step 3 Additions)
+
+```
+hackathon-todo/
+├── backend/
+│   ├── console/              # Step 1 (preserved)
+│   ├── api/                  # Step 2 (existing)
+│   │   ├── src/
+│   │   │   ├── models/       # Add: Conversation, Message models
+│   │   │   ├── services/
+│   │   │   ├── api/          # Add: /chat endpoint
+│   │   │   ├── auth/
+│   │   │   ├── mcp/          # NEW: MCP server implementation
+│   │   │   └── agents/       # NEW: OpenAI Agents SDK integration
+│   │   └── tests/            # Add: chat endpoint tests, MCP tool tests
+├── frontend/                  # Step 2 (existing)
+│   ├── src/
+│   │   ├── app/
+│   │   │   └── chat/         # NEW: Chat interface page
+│   │   ├── components/
+│   │   │   └── chat/         # NEW: ChatKit components
+│   │   └── lib/
+│   │       └── chatkit.ts    # NEW: ChatKit configuration
+├── specs/
+│   ├── features/
+│   │   └── 003-step-3-ai-chatbot/  # NEW: Step 3 specs
+│   ├── api/
+│   │   └── mcp-tools.md      # NEW: MCP tool specifications
+│   └── agents/               # NEW: Agent behavior specs
+└── history/prompts/
+    └── 003-step-3-ai-chatbot/  # NEW: Step 3 PHRs
+```
+
+#### Non-Functional Requirements (Step 3)
+
+- Chat response time MUST be under 3 seconds (including AI processing)
+- MCP tool execution MUST be under 500ms per tool
+- Conversation history retrieval MUST be under 200ms
+- Agent MUST handle ambiguous requests gracefully
+- System MUST handle concurrent conversations from multiple users
+- Conversation state MUST survive server restarts
+
+#### Explicit Non-Goals (Step 3 - OUT OF SCOPE)
+
+- Voice interface or speech-to-text
+- Multi-language support
+- Custom AI model training
+- Advanced NLP features beyond OpenAI SDK capabilities
+- Real-time streaming responses (websockets)
+- Conversation branching or editing
+- Advanced task features (priorities, tags, categories, due dates)
+- Third-party integrations
+- Kubernetes deployment (reserved for Step 4)
+
+### Step 3 Development Workflow
+
+#### Specification Phase
+
+1. Create feature specification in `specs/features/003-step-3-ai-chatbot/spec.md`
+2. Document MCP tool contracts in `specs/api/mcp-tools.md`
+3. Design agent behavior in `specs/agents/task-agent-behavior.md`
+4. Document conversation database schema in `specs/database/conversations.md`
+5. Generate implementation plan in `specs/features/003-step-3-ai-chatbot/plan.md`
+6. Break down into tasks in `specs/features/003-step-3-ai-chatbot/tasks.md`
+
+#### Implementation Phase (Recommended Order)
+
+1. **Database Models**
+   - Add Conversation and Message models to SQLModel
+   - Create Alembic migration for new tables
+   - Test database schema
+
+2. **MCP Server**
+   - Implement MCP server using Official MCP SDK
+   - Create all five MCP tools (add, list, complete, delete, update)
+   - Ensure tools are stateless and use database
+   - Write tests for each MCP tool
+   - Verify user authentication and data isolation
+
+3. **OpenAI Agents SDK Integration**
+   - Configure OpenAI Agent with MCP tools
+   - Implement agent runner with conversation history
+   - Test natural language understanding
+   - Implement error handling and fallbacks
+
+4. **Chat API Endpoint**
+   - Create POST `/api/{user_id}/chat` endpoint
+   - Implement stateless conversation flow
+   - Integrate agent with MCP tools
+   - Store conversation history to database
+   - Add authentication middleware
+
+5. **ChatKit Frontend**
+   - Install and configure OpenAI ChatKit
+   - Create chat interface page
+   - Connect to backend chat endpoint
+   - Display conversation history
+   - Add loading states and error handling
+   - Configure domain allowlist (for production)
+
+6. **Integration Testing**
+   - Test end-to-end conversation flows
+   - Verify all natural language commands work
+   - Test conversation persistence and resumption
+   - Verify data isolation between users
+   - Test error scenarios
+
+7. **Documentation**
+   - Document MCP tools and usage
+   - Document agent behavior patterns
+   - Update README with Step 3 setup
+   - Create deployment guide for ChatKit
+   - Update PHRs
+
+#### Validation Phase
+
+1. All five task operations work via natural language
+2. Agent understands variety of command phrasings
+3. Conversation context is maintained across requests
+4. Conversations persist and can be resumed
+5. MCP tools execute correctly with proper data isolation
+6. ChatKit UI displays conversations properly
+7. All tests passing (unit + integration)
+8. Server remains stateless (verified via restart test)
+
+### Step 3 Quality Gates
+
+Before moving to Step 4, the following MUST be verified:
+
+- [ ] All task operations accessible via natural language chat
+- [ ] MCP server implemented with all five tools
+- [ ] OpenAI Agents SDK integrated and working
+- [ ] Chat endpoint implemented and stateless
+- [ ] Conversation history persists in database
+- [ ] ChatKit frontend displays conversations correctly
+- [ ] Agent handles natural language variations correctly
+- [ ] Agent provides friendly confirmations
+- [ ] Error handling graceful for invalid requests
+- [ ] Users can only access their own tasks and conversations
+- [ ] All tests passing (>90% coverage for new code)
+- [ ] Conversation survives server restart
+- [ ] Environment variables documented
+- [ ] Setup instructions in README work for new users
+- [ ] Code generated by Claude Code (no manual implementation)
+- [ ] PHRs created for all major development sessions
+- [ ] Steps 1-2 functionality still works (not broken by Step 3 changes)
+
+### Step 3 Key Architecture Benefits
+
+| Aspect | Benefit |
+|--------|---------|
+| MCP Tools | Standardized interface for AI to interact with your app |
+| Single Endpoint | Simpler API — AI handles routing to tools |
+| Stateless Server | Scalable, resilient, horizontally scalable |
+| Tool Composition | Agent can chain multiple tools in one turn |
+| Conversation Persistence | Resume conversations after server restart |
+| Database-Driven State | No in-memory state, ready for multi-instance deployment |
+
+---
+
+## Step 4: Local Kubernetes Deployment
+
+### Step 4 Overview
+
+**Objective**: Deploy the Todo Chatbot on a local Kubernetes cluster using Minikube and Helm Charts, leveraging AI-assisted DevOps tools for intelligent container and orchestration operations.
+
+**Development Approach**: Use the Agentic Dev Stack workflow: Write spec → Generate plan → Break into tasks → Implement via Claude Code. No manual coding allowed. We will review the process, prompts, and iterations to judge each phase and project.
+
+### Step 4 Principles
+
+#### XIX. Container-First Architecture
+
+**All application components MUST be containerized using Docker with AI-assisted operations.**
+
+- Frontend and backend MUST be packaged as Docker images
+- Use Docker AI Agent (Gordon) for intelligent Docker operations when available
+- Each service MUST have a Dockerfile with multi-stage builds for optimization
+- Images MUST follow security best practices (non-root users, minimal base images)
+- Container images MUST be tagged with semantic versions
+- Environment-specific configuration MUST be externalized (env vars, ConfigMaps)
+- If Gordon is unavailable, use standard Docker CLI or Claude Code-generated commands
+
+**Container Requirements**:
+- Backend API: Python FastAPI application with all dependencies
+- Frontend: Next.js application with static export or standalone output
+- Health checks: All containers MUST expose `/health` or equivalent endpoint
+- Resource limits: CPU and memory limits MUST be defined
+- Image size: Optimize for minimal size using multi-stage builds
+
+**Gordon Usage Examples**:
+```bash
+# Discover Gordon capabilities
+docker ai "What can you do?"
+
+# Generate Dockerfile
+docker ai "Create a production-ready Dockerfile for a FastAPI app"
+
+# Build with optimization
+docker ai "Build an optimized image for my Next.js frontend"
+
+# Troubleshoot issues
+docker ai "Why is my container failing to start?"
+```
+
+**Rationale**: Containerization ensures consistency across environments, enables orchestration, and prepares applications for cloud deployment. Gordon accelerates Docker workflows with AI assistance.
+
+#### XX. Declarative Infrastructure with Helm
+
+**All Kubernetes resources MUST be defined declaratively using Helm Charts.**
+
+- Use Helm Charts for all Kubernetes resource definitions
+- Leverage kubectl-ai and/or Kagent to generate initial Helm chart structure
+- Charts MUST include: Deployments, Services, ConfigMaps, Secrets (placeholders)
+- Use Helm values for environment-specific configuration
+- Chart MUST be versioned and follow semantic versioning
+- Templates MUST use parameterization for reusability
+- Include Chart.yaml with metadata and dependencies
+
+**Helm Chart Structure**:
+```
+helm/
+├── Chart.yaml              # Chart metadata
+├── values.yaml             # Default configuration values
+├── values-dev.yaml         # Development overrides
+├── values-prod.yaml        # Production overrides (future)
+└── templates/
+    ├── deployment.yaml     # Pod deployment specs
+    ├── service.yaml        # Service definitions
+    ├── configmap.yaml      # Configuration data
+    ├── secret.yaml         # Sensitive data (placeholders)
+    ├── ingress.yaml        # Ingress rules (optional)
+    └── _helpers.tpl        # Template helpers
+```
+
+**kubectl-ai / Kagent Usage Examples**:
+```bash
+# Generate Helm chart structure
+kubectl-ai "create a helm chart for todo frontend with 2 replicas"
+
+# Deploy application
+kubectl-ai "deploy the todo backend with environment variables from configmap"
+
+# Scale resources
+kubectl-ai "scale the backend deployment to handle more load"
+
+# Troubleshoot
+kubectl-ai "check why the pods are failing"
+kagent "analyze the cluster health"
+```
+
+**Rationale**: Helm provides package management, versioning, and templating for Kubernetes. AI tools accelerate chart creation and troubleshooting. Declarative configuration enables GitOps workflows.
+
+#### XXI. Local Kubernetes with Minikube
+
+**Development and testing MUST use Minikube for local Kubernetes cluster.**
+
+- Use Minikube for local Kubernetes cluster (zero-cost learning)
+- Cluster MUST have sufficient resources (2+ CPUs, 4GB+ RAM recommended)
+- Enable required addons: ingress (optional), metrics-server (optional), dashboard (optional)
+- Use Docker Desktop integration when available
+- All deployments MUST work on Minikube before cloud migration
+
+**Minikube Setup Requirements**:
+```bash
+# Start cluster with sufficient resources
+minikube start --cpus=2 --memory=4096 --driver=docker
+
+# Enable useful addons (optional)
+minikube addons enable ingress
+minikube addons enable metrics-server
+minikube addons enable dashboard
+
+# Verify cluster
+kubectl cluster-info
+kubectl get nodes
+```
+
+**Rationale**: Minikube provides free, local Kubernetes environment for development and testing. Ensures deployments work before costly cloud migration.
+
+#### XXII. AI-Assisted DevOps Operations
+
+**Leverage AI-powered DevOps tools for intelligent Docker and Kubernetes operations.**
+
+- Use Docker AI Agent (Gordon) for Docker operations when available
+- Use kubectl-ai for quick Kubernetes operations and manifest generation
+- Use Kagent for advanced cluster analysis and optimization
+- Combine AI tools with traditional commands for comprehensive workflows
+- Document AI tool usage in PHRs for learning and reproducibility
+
+**AI Tool Selection Strategy**:
+
+| Tool | Use Cases | Examples |
+|------|-----------|----------|
+| **Gordon** | Dockerfile generation, image optimization, container troubleshooting | "Create production Dockerfile", "Why is container failing?" |
+| **kubectl-ai** | Quick deployments, manifest generation, basic troubleshooting | "Deploy frontend with 2 replicas", "Check pod status" |
+| **Kagent** | Cluster analysis, resource optimization, advanced diagnostics | "Analyze cluster health", "Optimize resource allocation" |
+
+**Workflow Recommendations**:
+1. Start with kubectl-ai for day-one empowerment
+2. Layer in Kagent for advanced use cases
+3. Use Gordon for all Docker operations (if available)
+4. Fall back to standard CLI when AI tools unavailable
+
+**Rationale**: AI-powered DevOps tools reduce learning curve, accelerate workflows, and provide intelligent assistance for complex operations. Empowers developers without deep Kubernetes expertise.
+
+#### XXIII. Environment Parity and Configuration Management
+
+**Configuration MUST be externalized and environment-agnostic.**
+
+- Use Kubernetes ConfigMaps for non-sensitive configuration
+- Use Kubernetes Secrets for sensitive data (API keys, passwords, tokens)
+- Helm values files MUST define environment-specific overrides
+- Application code MUST NOT contain hardcoded configuration
+- Database connection strings MUST use environment variables
+- Support multiple environments: development (Minikube), production (future cloud)
+
+**Configuration Hierarchy**:
+1. Default values in `values.yaml`
+2. Environment overrides in `values-{env}.yaml`
+3. Runtime ConfigMaps and Secrets
+4. Application reads from environment variables
+
+**ConfigMap Example**:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-backend-config
+data:
+  CORS_ORIGINS: "http://localhost:3000"
+  DATABASE_URL: "postgresql://user:pass@postgres:5432/todo"
+```
+
+**Secret Example** (values provided at deploy time):
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: todo-backend-secrets
+type: Opaque
+stringData:
+  OPENAI_API_KEY: "<provided-at-deploy>"
+  BETTER_AUTH_SECRET: "<provided-at-deploy>"
+```
+
+**Rationale**: Externalized configuration enables portability, security, and environment-specific customization without code changes.
+
+### Step 4 Requirements & Constraints
+
+#### Functional Requirements (MANDATORY)
+
+Deploy complete Todo Chatbot application on Minikube:
+
+1. **Containerized Backend** - FastAPI application in Docker container
+2. **Containerized Frontend** - Next.js application in Docker container
+3. **Kubernetes Deployments** - Backend and frontend deployed as Kubernetes Deployments
+4. **Service Discovery** - Backend and frontend exposed via Kubernetes Services
+5. **Configuration Management** - ConfigMaps for non-sensitive config, Secrets for sensitive data
+6. **Health Checks** - Liveness and readiness probes configured
+7. **Resource Management** - CPU and memory limits defined
+8. **Helm Deployment** - All resources deployed via Helm charts
+
+#### Technology Stack (MANDATORY)
+
+| Component | Technology |
+|-----------|-----------|
+| Containerization | Docker (Docker Desktop) |
+| Docker AI | Docker AI Agent (Gordon) |
+| Orchestration | Kubernetes (Minikube) |
+| Package Manager | Helm Charts |
+| AI DevOps | kubectl-ai, Kagent |
+| Application | Phase III Todo Chatbot |
+| Database | Neon Serverless PostgreSQL (external, not containerized) |
+
+#### Architecture Diagram
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                         Minikube Cluster                           │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │                    Kubernetes Namespace                       │ │
+│  │                                                              │ │
+│  │  ┌─────────────────────┐       ┌─────────────────────┐     │ │
+│  │  │  Frontend Service   │       │  Backend Service    │     │ │
+│  │  │  (ClusterIP/NodePort)│       │  (ClusterIP)        │     │ │
+│  │  └──────────┬──────────┘       └──────────┬──────────┘     │ │
+│  │             │                              │                │ │
+│  │             ▼                              ▼                │ │
+│  │  ┌─────────────────────┐       ┌─────────────────────┐     │ │
+│  │  │  Frontend Deployment│       │  Backend Deployment │     │ │
+│  │  │  (Next.js App)      │       │  (FastAPI App)      │     │ │
+│  │  │  Replicas: 2        │       │  Replicas: 2        │     │ │
+│  │  └─────────────────────┘       └──────────┬──────────┘     │ │
+│  │                                            │                │ │
+│  │  ┌─────────────────────┐       ┌─────────────────────┐     │ │
+│  │  │  Frontend ConfigMap │       │  Backend ConfigMap  │     │ │
+│  │  └─────────────────────┘       └─────────────────────┘     │ │
+│  │                                                              │ │
+│  │                                 ┌─────────────────────┐     │ │
+│  │                                 │  Backend Secrets    │     │ │
+│  │                                 │  (API keys, tokens) │     │ │
+│  │                                 └─────────────────────┘     │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+                    ┌──────────────────────────┐
+                    │  External Neon Database  │
+                    │  (PostgreSQL)            │
+                    └──────────────────────────┘
+```
+
+#### Docker Configuration
+
+**Backend Dockerfile Requirements**:
+- Multi-stage build (build stage + runtime stage)
+- Base image: python:3.13-slim or python:3.13-alpine
+- Non-root user for security
+- Health check endpoint: `/health`
+- Expose port: 8000
+- Environment variables injected at runtime
+- Dependencies installed via uv or pip
+
+**Frontend Dockerfile Requirements**:
+- Multi-stage build (dependencies + build + runtime)
+- Base image: node:20-alpine
+- Production build with Next.js standalone output
+- Expose port: 3000
+- Environment variables injected at runtime
+- Static assets optimized
+
+#### Kubernetes Resource Specifications
+
+**Backend Deployment**:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: todo-backend
+  template:
+    spec:
+      containers:
+      - name: backend
+        image: todo-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DATABASE_URL
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: OPENAI_API_KEY
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+```
+
+**Frontend Deployment** (similar structure, port 3000, different health checks)
+
+**Backend Service**:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: todo-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+```
+
+**Frontend Service**:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-frontend
+spec:
+  type: NodePort  # Or LoadBalancer for cloud
+  selector:
+    app: todo-frontend
+  ports:
+  - port: 3000
+    targetPort: 3000
+    nodePort: 30000  # Access via minikube ip:30000
+```
+
+#### Helm Values Configuration
+
+**values.yaml** (default configuration):
+```yaml
+backend:
+  image:
+    repository: todo-backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicas: 2
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  config:
+    corsOrigins: "http://localhost:3000"
+    databaseUrl: "postgresql://user:pass@neon-host/db"
+  secrets:
+    openaiApiKey: ""  # Provided at deploy time
+    betterAuthSecret: ""  # Provided at deploy time
+
+frontend:
+  image:
+    repository: todo-frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicas: 2
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  config:
+    apiUrl: "http://todo-backend:8000"
+    openaiDomainKey: ""  # Provided at deploy time
+```
+
+**values-dev.yaml** (Minikube overrides):
+```yaml
+backend:
+  replicas: 1
+  config:
+    corsOrigins: "http://localhost:30000"
+
+frontend:
+  replicas: 1
+  service:
+    type: NodePort
+    nodePort: 30000
+```
+
+#### Environment Variables (Step 4 Required)
+
+**No changes to application code environment variables**. Configuration is externalized to Kubernetes ConfigMaps and Secrets.
+
+**New Deployment Variables** (provided via Helm values or command-line):
+```bash
+# Deploy with secrets
+helm install todo-app ./helm/todo-app \
+  --set backend.secrets.openaiApiKey="<your-key>" \
+  --set backend.secrets.betterAuthSecret="<your-secret>" \
+  --set frontend.config.openaiDomainKey="<your-domain-key>"
+```
+
+#### Project Structure (Step 4 Additions)
+
+```
+hackathon-todo/
+├── backend/
+│   ├── console/              # Step 1 (preserved)
+│   ├── api/                  # Step 2-3 (existing)
+│   │   ├── Dockerfile        # NEW: Backend container image
+│   │   ├── .dockerignore     # NEW: Docker ignore rules
+│   │   └── src/              # Existing application code
+├── frontend/                  # Step 2-3 (existing)
+│   ├── Dockerfile            # NEW: Frontend container image
+│   ├── .dockerignore         # NEW: Docker ignore rules
+│   └── src/                  # Existing application code
+├── helm/                      # NEW: Helm charts directory
+│   └── todo-app/
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       ├── values-dev.yaml
+│       └── templates/
+│           ├── backend-deployment.yaml
+│           ├── backend-service.yaml
+│           ├── backend-configmap.yaml
+│           ├── backend-secret.yaml
+│           ├── frontend-deployment.yaml
+│           ├── frontend-service.yaml
+│           ├── frontend-configmap.yaml
+│           └── _helpers.tpl
+├── k8s/                       # NEW: Raw Kubernetes manifests (optional, for reference)
+│   ├── backend/
+│   └── frontend/
+├── specs/
+│   ├── features/
+│   │   └── 004-step-4-k8s-deployment/  # NEW: Step 4 specs
+│   ├── containers/           # NEW: Dockerfile specifications
+│   └── kubernetes/           # NEW: Kubernetes manifest specs
+└── history/prompts/
+    └── 004-step-4-k8s-deployment/  # NEW: Step 4 PHRs
+```
+
+#### Non-Functional Requirements (Step 4)
+
+- Container startup time MUST be under 30 seconds
+- Health checks MUST respond within 5 seconds
+- Deployments MUST support rolling updates with zero downtime
+- Resource limits MUST prevent memory leaks from crashing cluster
+- Minikube cluster MUST run on machines with 2+ CPUs, 4GB+ RAM
+- All services MUST be reachable within the cluster
+- Frontend MUST be accessible from host machine (via NodePort or Ingress)
+
+#### Explicit Non-Goals (Step 4 - OUT OF SCOPE)
+
+- Cloud deployment (AWS EKS, GCP GKE, Azure AKS) - reserved for Step 5
+- Horizontal Pod Autoscaling (HPA)
+- Persistent Volume Claims for database (using external Neon)
+- Service mesh (Istio, Linkerd)
+- Advanced monitoring (Prometheus, Grafana)
+- CI/CD pipelines (GitHub Actions, GitLab CI)
+- Multi-cluster deployment
+- Production-grade security hardening
+- Database containerization (keep using external Neon)
+
+### Step 4 Development Workflow
+
+#### Specification Phase
+
+1. Create feature specification in `specs/features/004-step-4-k8s-deployment/spec.md`
+2. Document Dockerfile specifications in `specs/containers/`
+3. Design Kubernetes manifests in `specs/kubernetes/`
+4. Plan Helm chart structure in specification
+5. Generate implementation plan in `specs/features/004-step-4-k8s-deployment/plan.md`
+6. Break down into tasks in `specs/features/004-step-4-k8s-deployment/tasks.md`
+
+#### Implementation Phase (Recommended Order)
+
+1. **Docker Setup**
+   - Install Docker Desktop and enable Kubernetes (or use Minikube)
+   - Enable Gordon (Docker AI Agent) if available
+   - Verify Docker installation
+
+2. **Backend Containerization**
+   - Use Gordon to generate Dockerfile for FastAPI app
+   - Create multi-stage Dockerfile with optimization
+   - Add .dockerignore file
+   - Build backend image: `docker build -t todo-backend:latest ./backend/api`
+   - Test backend container locally: `docker run -p 8000:8000 todo-backend`
+   - Verify health endpoint
+
+3. **Frontend Containerization**
+   - Use Gordon to generate Dockerfile for Next.js app
+   - Create multi-stage Dockerfile with Next.js standalone output
+   - Add .dockerignore file
+   - Build frontend image: `docker build -t todo-frontend:latest ./frontend`
+   - Test frontend container locally: `docker run -p 3000:3000 todo-frontend`
+
+4. **Minikube Setup**
+   - Install Minikube
+   - Start cluster: `minikube start --cpus=2 --memory=4096`
+   - Enable addons if needed: `minikube addons enable ingress`
+   - Verify cluster: `kubectl cluster-info`
+   - Configure Docker to use Minikube's Docker daemon: `eval $(minikube docker-env)`
+
+5. **Helm Chart Creation**
+   - Install Helm
+   - Use kubectl-ai or Kagent to generate initial Helm chart structure
+   - Create Chart.yaml with metadata
+   - Define values.yaml with default configuration
+   - Create values-dev.yaml with Minikube overrides
+   - Create templates for Deployments, Services, ConfigMaps, Secrets
+
+6. **Kubernetes Deployment**
+   - Build images in Minikube's Docker daemon
+   - Create namespace (optional): `kubectl create namespace todo-app`
+   - Deploy with Helm: `helm install todo-app ./helm/todo-app -f ./helm/todo-app/values-dev.yaml`
+   - Verify deployments: `kubectl get pods`
+   - Check services: `kubectl get svc`
+   - View logs: `kubectl logs -f <pod-name>`
+
+7. **Testing & Validation**
+   - Access frontend via NodePort: `minikube service todo-frontend`
+   - Test all application features
+   - Verify backend health endpoint: `kubectl port-forward svc/todo-backend 8000:8000`
+   - Test rolling updates: `helm upgrade todo-app ./helm/todo-app`
+   - Test rollback: `helm rollback todo-app`
+   - Verify resource limits: `kubectl describe pod <pod-name>`
+
+8. **AI Tool Integration**
+   - Use kubectl-ai for troubleshooting: `kubectl-ai "why are pods failing?"`
+   - Use Kagent for cluster analysis: `kagent "analyze cluster health"`
+   - Use Gordon for image optimization: `docker ai "optimize my images"`
+   - Document AI tool usage in PHRs
+
+9. **Documentation**
+   - Update README with Step 4 deployment instructions
+   - Document Minikube setup steps
+   - Document Helm chart usage
+   - Create troubleshooting guide
+   - Document AI tool commands used
+   - Update PHRs
+
+#### Validation Phase
+
+1. All containers build successfully without errors
+2. All pods are running (Ready 1/1, Status Running)
+3. Services are accessible within cluster and from host
+4. All application features work in Kubernetes deployment
+5. Health checks pass for all containers
+6. Rolling updates work without downtime
+7. Resource limits are enforced (no OOMKilled pods)
+8. Helm charts install/upgrade/rollback successfully
+9. All tests passing (container tests, integration tests)
+10. Documentation complete and accurate
+
+### Step 4 Quality Gates
+
+Before moving to Step 5, the following MUST be verified:
+
+- [ ] Backend and frontend containerized with optimized Dockerfiles
+- [ ] Multi-stage builds implemented for both services
+- [ ] Docker images built and tested locally
+- [ ] Minikube cluster running with sufficient resources
+- [ ] Helm charts created with proper templating
+- [ ] All Kubernetes resources defined (Deployments, Services, ConfigMaps, Secrets)
+- [ ] Application deployed successfully on Minikube
+- [ ] All pods running and healthy (liveness/readiness probes passing)
+- [ ] Frontend accessible from host machine
+- [ ] Backend accessible within cluster
+- [ ] All Step 3 features work in Kubernetes deployment
+- [ ] ConfigMaps and Secrets properly configured
+- [ ] Resource limits defined for all containers
+- [ ] Rolling updates tested and working
+- [ ] Helm rollback tested and working
+- [ ] Gordon (Docker AI) used for Docker operations (if available)
+- [ ] kubectl-ai and/or Kagent used for Kubernetes operations
+- [ ] All tests passing (>90% coverage maintained)
+- [ ] Environment variables externalized
+- [ ] Setup instructions in README work for new users
+- [ ] Deployment documented with Minikube setup guide
+- [ ] AI tool usage documented in PHRs
+- [ ] Code generated by Claude Code (no manual implementation)
+- [ ] PHRs created for all major development sessions
+- [ ] Steps 1-3 functionality still works (not broken by Step 4 changes)
+
+### Step 4 Key Architecture Benefits
+
+| Aspect | Benefit |
+|--------|---------|
+| Containerization | Consistent environments, eliminates "works on my machine" |
+| Kubernetes Orchestration | Automated deployment, scaling, self-healing, rolling updates |
+| Helm Charts | Versioned deployments, templating, easy rollbacks |
+| Declarative Configuration | Infrastructure as code, reproducible deployments |
+| AI DevOps Tools | Accelerated learning, intelligent troubleshooting, reduced errors |
+| Minikube | Free local testing, safe experimentation, fast iteration |
+| Health Checks | Automatic restart of unhealthy pods, improved reliability |
+| Resource Limits | Prevent resource starvation, predictable performance |
+
+### Step 4 Common Commands Reference
+
+#### Docker AI (Gordon) Commands
+```bash
+# Enable Gordon in Docker Desktop Settings > Beta features
+docker ai "What can you do?"
+docker ai "Create a production Dockerfile for FastAPI"
+docker ai "Optimize my Next.js Dockerfile"
+docker ai "Why is my container failing?"
+docker ai "Show me best practices for Python containers"
+```
+
+#### kubectl-ai Commands
+```bash
+kubectl-ai "deploy the todo frontend with 2 replicas"
+kubectl-ai "scale the backend to 3 replicas"
+kubectl-ai "check why pods are failing"
+kubectl-ai "show me resource usage"
+kubectl-ai "create a configmap from my env file"
+```
+
+#### Kagent Commands
+```bash
+kagent "analyze the cluster health"
+kagent "optimize resource allocation"
+kagent "find performance bottlenecks"
+kagent "suggest improvements for my deployment"
+```
+
+#### Standard Kubernetes Commands
+```bash
+# Cluster management
+minikube start --cpus=2 --memory=4096
+minikube stop
+minikube delete
+minikube status
+kubectl cluster-info
+
+# Build images in Minikube
+eval $(minikube docker-env)
+docker build -t todo-backend:latest ./backend/api
+docker build -t todo-frontend:latest ./frontend
+
+# Helm operations
+helm install todo-app ./helm/todo-app -f values-dev.yaml
+helm upgrade todo-app ./helm/todo-app
+helm rollback todo-app
+helm uninstall todo-app
+helm list
+
+# Resource inspection
+kubectl get pods
+kubectl get svc
+kubectl get deployments
+kubectl describe pod <pod-name>
+kubectl logs -f <pod-name>
+
+# Port forwarding
+kubectl port-forward svc/todo-backend 8000:8000
+minikube service todo-frontend  # Opens in browser
+
+# Troubleshooting
+kubectl get events
+kubectl describe pod <pod-name>
+kubectl logs <pod-name> --previous  # If pod crashed
+```
+
+---
+
 ## Governance
 
 ### Constitution Authority
@@ -577,4 +1704,1021 @@ Before moving to Step 3, the following MUST be verified:
 - Judges will evaluate specification quality and iteration process
 - Live presentation (if invited) MUST demonstrate spec-driven workflow
 
-**Version**: 2.0.0 | **Ratified**: 2025-12-31 | **Last Amended**: 2026-01-07
+---
+
+## Step 5: Advanced Cloud Deployment
+
+### Step 5 Overview
+
+**Objective**: Implement advanced features and deploy first on Minikube locally and then to production-grade Kubernetes on Azure (AKS), Google Cloud (GKE), or Oracle Cloud, with event-driven architecture using Kafka and Dapr for distributed application runtime.
+
+**Development Approach**: Use the Agentic Dev Stack workflow: Write spec → Generate plan → Break into tasks → Implement via Claude Code. No manual coding allowed. We will review the process, prompts, and iterations to judge each phase and project.
+
+### Step 5 Principles
+
+#### XXIV. Advanced Task Management Features
+
+**Applications MUST support advanced and intermediate task management capabilities.**
+
+**Advanced Level Features (MANDATORY)**:
+- **Recurring Tasks**: Tasks that repeat on schedules (daily, weekly, monthly, custom intervals)
+- **Due Dates**: Tasks with specific deadline timestamps
+- **Reminders**: Notifications before task due dates (configurable time intervals)
+
+**Intermediate Level Features (MANDATORY)**:
+- **Priorities**: Task priority levels (low, medium, high, urgent)
+- **Tags**: Multiple tags per task for categorization
+- **Search**: Full-text search across task title and description
+- **Filter**: Filter tasks by status, priority, tags, due date ranges
+- **Sort**: Sort tasks by created date, due date, priority, title
+
+**Database Schema Extensions Required**:
+```sql
+-- Extend Task model
+ALTER TABLE tasks ADD COLUMN priority VARCHAR(20);  -- low, medium, high, urgent
+ALTER TABLE tasks ADD COLUMN due_date TIMESTAMP;
+ALTER TABLE tasks ADD COLUMN recurrence_rule VARCHAR(100);  -- iCal RRULE format
+ALTER TABLE tasks ADD COLUMN reminder_offset INTEGER;  -- Minutes before due_date
+ALTER TABLE tasks ADD COLUMN next_occurrence TIMESTAMP;  -- For recurring tasks
+
+-- New tables
+CREATE TABLE task_tags (
+  task_id INTEGER REFERENCES tasks(id),
+  tag VARCHAR(50),
+  PRIMARY KEY (task_id, tag)
+);
+
+CREATE TABLE reminders (
+  id SERIAL PRIMARY KEY,
+  task_id INTEGER REFERENCES tasks(id),
+  user_id VARCHAR(100),
+  scheduled_at TIMESTAMP,
+  sent BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**Rationale**: Advanced features provide professional task management capabilities comparable to commercial todo applications. These features demonstrate mastery of complex data models and business logic.
+
+#### XXV. Event-Driven Architecture with Kafka
+
+**Applications MUST use event-driven patterns for asynchronous operations via Kafka.**
+
+**Event Streaming Requirements**:
+- Use Kafka (Confluent Cloud/Redpanda Cloud) or alternative pub/sub component with Dapr
+- All state changes MUST publish events to Kafka topics
+- Event consumers MUST process events asynchronously
+- Events MUST be immutable and append-only
+- Event schema MUST be versioned (JSON Schema or Avro)
+
+**Required Kafka Topics**:
+- `tasks.created` - Published when a task is created
+- `tasks.updated` - Published when a task is modified
+- `tasks.completed` - Published when a task is marked complete
+- `tasks.deleted` - Published when a task is deleted
+- `reminders.scheduled` - Published when a reminder is scheduled
+- `reminders.due` - Published when a reminder should be sent
+
+**Event Schema Example**:
+```json
+{
+  "event_id": "uuid",
+  "event_type": "task.created",
+  "timestamp": "2026-01-30T12:00:00Z",
+  "user_id": "ziakhan",
+  "payload": {
+    "task_id": 42,
+    "title": "Buy groceries",
+    "priority": "high",
+    "due_date": "2026-02-01T18:00:00Z"
+  }
+}
+```
+
+**Kafka Integration via Dapr**:
+- Use Dapr Pub/Sub component for Kafka abstraction
+- Configure Dapr with Kafka broker connection
+- Publish events via Dapr Pub/Sub API
+- Subscribe to topics via Dapr subscriptions
+
+**Fallback Strategy**:
+- If Kafka access is unavailable, use alternative Dapr-supported pub/sub (Redis Streams, Azure Service Bus, Google Pub/Sub)
+- Event contracts remain identical regardless of pub/sub backend
+
+**Rationale**: Event-driven architecture enables loose coupling, scalability, and asynchronous processing. Kafka provides durable, ordered event streaming for distributed systems.
+
+#### XXVI. Dapr Distributed Application Runtime
+
+**Applications MUST use Dapr for distributed application capabilities.**
+
+**Dapr Building Blocks Required**:
+
+| Building Block | Use Case | Implementation |
+|----------------|----------|----------------|
+| **Pub/Sub** | Event-driven messaging | Kafka/alternative pub/sub component |
+| **State Management** | Distributed state store | Redis or PostgreSQL state store |
+| **Bindings (Cron)** | Scheduled reminder processing | Cron binding for periodic jobs |
+| **Secrets** | Secure secret management | Kubernetes secrets or cloud secret store |
+| **Service Invocation** | Service-to-service communication | HTTP/gRPC with service discovery |
+
+**Dapr Configuration Requirements**:
+- Dapr sidecar deployed alongside each service (backend, reminder processor)
+- Component manifests defined for each building block
+- Dapr API used instead of direct Kafka/Redis clients
+- Observability enabled (Zipkin or Jaeger for distributed tracing)
+
+**Example Dapr Component (Kafka Pub/Sub)**:
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "kafka-broker:9092"
+  - name: consumerGroup
+    value: "todo-app"
+```
+
+**Example Dapr Component (State Store)**:
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: "redis:6379"
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-secret
+      key: password
+```
+
+**Dapr Workflow**:
+1. Backend publishes task.created event via Dapr Pub/Sub API
+2. Reminder service subscribes to task.created via Dapr subscription
+3. Reminder service calculates reminder time and stores in Dapr State Store
+4. Cron binding triggers reminder processor every minute
+5. Reminder processor queries Dapr State Store for due reminders
+6. Reminder processor publishes reminders.due events via Dapr Pub/Sub
+
+**Rationale**: Dapr abstracts infrastructure complexity (Kafka, Redis, secrets) with portable APIs. Enables cloud-agnostic distributed application development.
+
+#### XXVII. Multi-Environment Cloud Deployment
+
+**Applications MUST support deployment to production-grade Kubernetes on cloud platforms.**
+
+**Deployment Environments Required**:
+1. **Minikube (Local)**: Development and testing with full Dapr stack
+2. **Cloud Production**: Azure AKS, Google Cloud GKE, or Oracle Cloud
+
+**Cloud Platform Selection**:
+- Choose one cloud platform: Azure (AKS), Google Cloud (GKE), or Oracle Cloud
+- MUST support managed Kubernetes service
+- MUST support managed Kafka or use Confluent/Redpanda Cloud
+- MUST support managed Redis (optional for Dapr state store)
+
+**Cloud Infrastructure Requirements**:
+- Managed Kubernetes cluster (AKS/GKE/OKE)
+- Managed PostgreSQL database (Azure Database, Cloud SQL, Oracle Autonomous DB)
+- Managed Kafka or Confluent/Redpanda Cloud
+- Managed Redis (optional, for Dapr state store)
+- Load balancer for frontend ingress
+- TLS/SSL certificates for HTTPS
+- DNS configuration for custom domain (optional)
+
+**Environment Parity Principle**:
+- Minikube deployment MUST match cloud deployment architecture
+- Dapr components MUST be portable between environments
+- Helm charts MUST support both environments via values files
+- Only infrastructure endpoints differ (localhost vs cloud URLs)
+
+**Rationale**: Production cloud deployment demonstrates mastery of real-world distributed systems. Multi-environment support ensures development/production parity.
+
+#### XXVIII. CI/CD Pipeline Automation
+
+**All deployments MUST be automated via CI/CD pipelines using GitHub Actions.**
+
+**CI/CD Pipeline Requirements**:
+
+**Continuous Integration (CI)**:
+- Trigger on every push to main branch and pull requests
+- Run all tests (unit, integration, end-to-end)
+- Build Docker images with semantic version tags
+- Push images to container registry (Docker Hub, GitHub Container Registry, cloud registry)
+- Run security scans (Snyk, Trivy, or similar)
+- Validate Helm charts with `helm lint`
+
+**Continuous Deployment (CD)**:
+- Trigger on successful merge to main branch
+- Deploy to staging environment (Minikube or cloud dev namespace)
+- Run smoke tests against staging deployment
+- Deploy to production environment (cloud production namespace)
+- Run health checks and rollback on failure
+
+**GitHub Actions Workflow Structure**:
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: |
+          cd backend/api && pytest
+          cd frontend && npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Docker images
+        run: |
+          docker build -t todo-backend:${{ github.sha }} ./backend/api
+          docker build -t todo-frontend:${{ github.sha }} ./frontend
+      - name: Push to registry
+        run: |
+          docker push todo-backend:${{ github.sha }}
+          docker push todo-frontend:${{ github.sha }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Kubernetes
+        run: |
+          helm upgrade --install todo-app ./helm/todo-app \
+            --set backend.image.tag=${{ github.sha }} \
+            --set frontend.image.tag=${{ github.sha }}
+```
+
+**Secrets Management in CI/CD**:
+- Store secrets in GitHub Secrets (OPENAI_API_KEY, BETTER_AUTH_SECRET, cloud credentials)
+- Inject secrets at deploy time via Helm `--set` flags or Kubernetes Secrets
+- Never commit secrets to repository
+
+**Rationale**: CI/CD automation ensures consistent, repeatable deployments. GitHub Actions integrates seamlessly with GitHub repositories and provides free CI/CD for public repos.
+
+#### XXIX. Monitoring and Logging
+
+**All production deployments MUST implement comprehensive monitoring and logging.**
+
+**Observability Requirements**:
+
+**Logging**:
+- Structured logging (JSON format) for all services
+- Centralized log aggregation (ELK Stack, Loki, cloud logging)
+- Log levels: DEBUG, INFO, WARN, ERROR, CRITICAL
+- Log correlation with trace IDs
+- Log retention policy (30 days minimum)
+
+**Metrics**:
+- Application metrics (request count, latency, error rate)
+- Infrastructure metrics (CPU, memory, disk, network)
+- Business metrics (tasks created, completed, reminders sent)
+- Kafka metrics (lag, throughput, partition health)
+- Dapr metrics (sidecar health, component status)
+
+**Distributed Tracing**:
+- Use Zipkin or Jaeger for distributed tracing
+- Trace context propagation across services
+- Trace all HTTP requests, Kafka events, Dapr calls
+- Visualize request flows and identify bottlenecks
+
+**Alerting**:
+- Define SLOs (Service Level Objectives) for critical paths
+- Alert on SLO violations (error rate >1%, p95 latency >500ms)
+- Alert on infrastructure issues (pod restarts, OOMKilled)
+- Alert on Kafka consumer lag (>1000 messages)
+- Use Prometheus Alertmanager, PagerDuty, or cloud alerting
+
+**Kubernetes Monitoring Tools**:
+- Prometheus for metrics collection
+- Grafana for metrics visualization
+- Loki for log aggregation (optional)
+- Kube-state-metrics for cluster state
+- Node exporter for node metrics
+
+**Example Prometheus Metrics**:
+```python
+# Backend API metrics
+from prometheus_client import Counter, Histogram
+
+tasks_created = Counter('tasks_created_total', 'Total tasks created')
+request_duration = Histogram('http_request_duration_seconds', 'HTTP request latency')
+
+@app.post("/api/{user_id}/tasks")
+async def create_task(task: TaskCreate):
+    with request_duration.time():
+        # ... create task logic
+        tasks_created.inc()
+```
+
+**Rationale**: Production systems require observability for troubleshooting, performance optimization, and reliability. Monitoring prevents outages and enables proactive incident response.
+
+### Step 5 Requirements & Constraints
+
+#### Functional Requirements (MANDATORY)
+
+**Part A: Advanced Features**:
+1. **Recurring Tasks** - Support daily, weekly, monthly, custom recurrence patterns
+2. **Due Dates & Reminders** - Schedule reminders before task deadlines
+3. **Priorities** - Assign priority levels to tasks
+4. **Tags** - Add multiple tags to tasks for categorization
+5. **Search** - Full-text search across tasks
+6. **Filter** - Filter tasks by status, priority, tags, due dates
+7. **Sort** - Sort tasks by various criteria
+8. **Event Publishing** - Publish all task events to Kafka
+9. **Reminder Processing** - Asynchronous reminder delivery via event consumers
+
+**Part B: Local Deployment (Minikube)**:
+1. **Full Dapr Stack** - Deploy Dapr with all building blocks (Pub/Sub, State, Bindings, Secrets, Service Invocation)
+2. **Kafka on Minikube** - Deploy Kafka cluster or use Redpanda
+3. **Reminder Service** - Deploy event consumer for reminder processing
+4. **Complete Application** - Deploy backend, frontend, reminder service with Dapr sidecars
+
+**Part C: Cloud Deployment**:
+1. **Production Kubernetes** - Deploy to Azure AKS, Google Cloud GKE, or Oracle Cloud
+2. **Managed Services** - Use cloud-managed PostgreSQL, Kafka (or Confluent/Redpanda Cloud), Redis
+3. **Dapr in Production** - Deploy Dapr with production-grade components
+4. **CI/CD Pipeline** - Automate deployments with GitHub Actions
+5. **Monitoring & Logging** - Implement observability stack (Prometheus, Grafana, distributed tracing)
+
+#### Technology Stack (MANDATORY)
+
+| Component | Technology | Notes |
+|-----------|-----------|-------|
+| Frontend | Next.js 16+ | From Step 2 |
+| Backend API | Python FastAPI | From Step 2 |
+| Reminder Service | Python FastAPI or standalone worker | NEW |
+| Database | Neon Serverless PostgreSQL or cloud-managed | Cloud-managed in production |
+| Event Streaming | Kafka (Confluent/Redpanda Cloud) or alternative | Via Dapr Pub/Sub |
+| Distributed Runtime | Dapr | Full building blocks |
+| State Store | Redis or PostgreSQL | Via Dapr State |
+| Orchestration | Kubernetes (Minikube + AKS/GKE/OKE) | Multi-environment |
+| Package Manager | Helm Charts | Enhanced from Step 4 |
+| Container Registry | Docker Hub, GitHub Container Registry, or cloud | For CI/CD |
+| CI/CD | GitHub Actions | Automated deployments |
+| Monitoring | Prometheus + Grafana | Metrics and dashboards |
+| Tracing | Zipkin or Jaeger | Distributed tracing |
+| Logging | ELK Stack, Loki, or cloud logging | Centralized logs |
+| AI Framework | OpenAI Agents SDK | From Step 3 |
+| MCP Server | Official MCP SDK | From Step 3 |
+| Authentication | Better Auth | From Step 2 |
+
+#### Architecture Diagram (Step 5)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      Cloud Kubernetes Cluster (AKS/GKE/OKE)            │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │                         Ingress (Load Balancer)                     │ │
+│  └──────────────────────────────┬───────────────────────────────────────┘ │
+│                                 │                                        │
+│  ┌──────────────────────────────▼──────────────────────────────────────┐ │
+│  │                      Frontend Service (NodePort/LB)                 │ │
+│  └──────────────────────────────┬──────────────────────────────────────┘ │
+│                                 │                                        │
+│  ┌──────────────────────────────▼──────────────────────────────────────┐ │
+│  │  Frontend Deployment (Next.js) + Dapr Sidecar                       │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │  Backend Service (ClusterIP)                                        │ │
+│  └──────────────────────────────┬──────────────────────────────────────┘ │
+│                                 │                                        │
+│  ┌──────────────────────────────▼──────────────────────────────────────┐ │
+│  │  Backend Deployment (FastAPI) + Dapr Sidecar                        │ │
+│  │  ┌────────────────┐ ┌────────────────┐ ┌─────────────────┐         │ │
+│  │  │ HTTP API       │ │ Dapr Pub/Sub   │ │ Dapr State      │         │ │
+│  │  │ (/tasks, /chat)│ │ (publish events)│ │ (cache)         │         │ │
+│  │  └────────────────┘ └────────────────┘ └─────────────────┘         │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │  Reminder Service + Dapr Sidecar                                    │ │
+│  │  ┌────────────────┐ ┌────────────────┐ ┌─────────────────┐         │ │
+│  │  │ Event Consumer │ │ Dapr Pub/Sub   │ │ Dapr Bindings   │         │ │
+│  │  │ (process tasks)│ │ (subscribe)    │ │ (cron trigger)  │         │ │
+│  │  └────────────────┘ └────────────────┘ └─────────────────┘         │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │  Dapr Components                                                    │ │
+│  │  - Pub/Sub (Kafka)                                                  │ │
+│  │  - State Store (Redis)                                              │ │
+│  │  - Bindings (Cron)                                                  │ │
+│  │  - Secrets (K8s Secrets)                                            │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+└──────────────────────────────────┬───────────────────────────────────────┘
+                                   │
+        ┌──────────────────────────┼──────────────────────────┐
+        │                          │                          │
+        ▼                          ▼                          ▼
+┌───────────────┐       ┌────────────────────┐    ┌──────────────────┐
+│ Cloud DB      │       │ Kafka (Managed or  │    │ Redis (Managed)  │
+│ (PostgreSQL)  │       │ Confluent/Redpanda)│    │ (Dapr State)     │
+└───────────────┘       └────────────────────┘    └──────────────────┘
+
+        ┌────────────────────────────────────────┐
+        │  Observability Stack                   │
+        │  - Prometheus (metrics)                │
+        │  - Grafana (dashboards)                │
+        │  - Zipkin/Jaeger (tracing)             │
+        │  - Loki/Cloud Logging (logs)           │
+        └────────────────────────────────────────┘
+```
+
+#### Database Schema Changes (Step 5)
+
+**Extended Task Model**:
+```python
+class Task(SQLModel, table=True):
+    __tablename__ = "tasks"
+
+    id: int
+    user_id: str
+    title: str
+    description: str = ""
+    completed: bool = False
+
+    # NEW: Advanced features
+    priority: str = "medium"  # low, medium, high, urgent
+    due_date: Optional[datetime] = None
+    recurrence_rule: Optional[str] = None  # iCal RRULE format
+    reminder_offset: Optional[int] = None  # Minutes before due_date
+    next_occurrence: Optional[datetime] = None  # For recurring tasks
+
+    created_at: datetime
+    updated_at: datetime
+```
+
+**New Models**:
+```python
+class TaskTag(SQLModel, table=True):
+    __tablename__ = "task_tags"
+    task_id: int = Field(foreign_key="tasks.id")
+    tag: str
+
+class Reminder(SQLModel, table=True):
+    __tablename__ = "reminders"
+    id: int
+    task_id: int = Field(foreign_key="tasks.id")
+    user_id: str
+    scheduled_at: datetime
+    sent: bool = False
+    created_at: datetime
+```
+
+#### Dapr Component Specifications
+
+**Kafka Pub/Sub Component** (production):
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "kafka.confluent.cloud:9092"  # Or Redpanda Cloud URL
+  - name: consumerGroup
+    value: "todo-app"
+  - name: authType
+    value: "password"
+  - name: saslUsername
+    secretKeyRef:
+      name: kafka-secret
+      key: username
+  - name: saslPassword
+    secretKeyRef:
+      name: kafka-secret
+      key: password
+```
+
+**Redis State Store Component**:
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: "redis-cluster.default.svc.cluster.local:6379"
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-secret
+      key: password
+```
+
+**Cron Binding Component**:
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  - name: schedule
+    value: "*/1 * * * *"  # Every minute
+```
+
+#### Helm Chart Enhancements (Step 5)
+
+**New Helm Templates**:
+- `reminder-deployment.yaml` - Reminder service deployment
+- `reminder-service.yaml` - Reminder service (if needed)
+- `dapr-components/` - Directory for Dapr component manifests
+  - `pubsub-kafka.yaml`
+  - `statestore-redis.yaml`
+  - `binding-cron.yaml`
+  - `secrets-k8s.yaml`
+
+**Enhanced values.yaml**:
+```yaml
+backend:
+  # ... existing backend config
+  dapr:
+    enabled: true
+    appId: todo-backend
+    appPort: 8000
+
+frontend:
+  # ... existing frontend config
+  dapr:
+    enabled: true
+    appId: todo-frontend
+    appPort: 3000
+
+reminderService:
+  enabled: true
+  image:
+    repository: todo-reminder-service
+    tag: "latest"
+  replicas: 1
+  dapr:
+    enabled: true
+    appId: reminder-service
+    appPort: 8001
+
+dapr:
+  components:
+    pubsub:
+      type: pubsub.kafka
+      brokers: "kafka.default.svc.cluster.local:9092"
+    statestore:
+      type: state.redis
+      host: "redis.default.svc.cluster.local:6379"
+    cron:
+      schedule: "*/1 * * * *"
+
+kafka:
+  enabled: false  # Use managed Kafka (Confluent/Redpanda Cloud)
+  externalBrokers: "kafka.confluent.cloud:9092"
+
+redis:
+  enabled: false  # Use managed Redis or deploy Redis chart
+  externalHost: "redis-cluster.default.svc.cluster.local:6379"
+```
+
+**values-minikube.yaml**:
+```yaml
+# Minikube overrides
+backend:
+  replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+
+frontend:
+  replicas: 1
+  service:
+    type: NodePort
+    nodePort: 30000
+
+reminderService:
+  replicas: 1
+
+kafka:
+  enabled: true  # Deploy Kafka locally (or use Redpanda)
+
+redis:
+  enabled: true  # Deploy Redis locally
+```
+
+**values-production.yaml**:
+```yaml
+# Cloud production overrides
+backend:
+  replicas: 3
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+frontend:
+  replicas: 3
+  service:
+    type: LoadBalancer  # Cloud load balancer
+  ingress:
+    enabled: true
+    host: "todo.example.com"
+    tls:
+      enabled: true
+
+reminderService:
+  replicas: 2
+
+kafka:
+  enabled: false
+  externalBrokers: "pkc-12345.us-east-1.aws.confluent.cloud:9092"  # Confluent Cloud
+
+redis:
+  enabled: false
+  externalHost: "redis.cache.windows.net:6380"  # Azure Redis Cache
+```
+
+#### Project Structure (Step 5 Additions)
+
+```
+hackathon-todo/
+├── backend/
+│   ├── console/              # Step 1 (preserved)
+│   ├── api/                  # Step 2-3 (existing)
+│   │   ├── src/
+│   │   │   ├── models/       # Extend: Task, add TaskTag, Reminder
+│   │   │   ├── services/
+│   │   │   │   └── events.py  # NEW: Event publishing service
+│   │   │   └── api/
+│   │   │       └── tasks.py   # Extend: Add search, filter, sort
+│   │   └── Dockerfile        # From Step 4
+│   └── reminder-service/     # NEW: Reminder processing service
+│       ├── src/
+│       │   ├── main.py       # Event consumer + cron processor
+│       │   └── dapr_client.py  # Dapr SDK integration
+│       ├── tests/
+│       ├── Dockerfile        # NEW
+│       └── pyproject.toml    # NEW
+├── helm/
+│   └── todo-app/
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       ├── values-minikube.yaml
+│       ├── values-production.yaml  # NEW
+│       └── templates/
+│           ├── reminder-deployment.yaml  # NEW
+│           ├── reminder-service.yaml     # NEW
+│           └── dapr-components/          # NEW
+│               ├── pubsub-kafka.yaml
+│               ├── statestore-redis.yaml
+│               ├── binding-cron.yaml
+│               └── secrets-k8s.yaml
+├── .github/
+│   └── workflows/
+│       ├── ci.yaml           # NEW: CI pipeline (test, build)
+│       └── cd.yaml           # NEW: CD pipeline (deploy)
+├── monitoring/               # NEW: Monitoring configurations
+│   ├── prometheus/
+│   │   └── prometheus.yaml
+│   ├── grafana/
+│   │   └── dashboards/
+│   └── zipkin/
+│       └── zipkin.yaml
+├── specs/
+│   ├── features/
+│   │   └── 005-step-5-cloud-deployment/  # NEW
+│   ├── events/               # NEW: Event schema specifications
+│   └── dapr/                 # NEW: Dapr component specs
+└── history/prompts/
+    └── 005-step-5-cloud-deployment/  # NEW
+```
+
+#### Non-Functional Requirements (Step 5)
+
+**Performance**:
+- API response time MUST be under 200ms (p95) for CRUD operations
+- Event publishing latency MUST be under 50ms
+- Reminder processing latency MUST be under 5 seconds from due time
+- Search queries MUST return results in under 500ms
+- Application MUST handle 10,000 concurrent users
+
+**Reliability**:
+- Uptime SLO: 99.9% availability (monthly)
+- Error rate SLO: <0.1% of requests
+- Reminder delivery SLO: >99% within 1 minute of due time
+- Kafka consumer lag MUST be <100 messages under normal load
+- Automatic pod restart on failure (liveness probes)
+
+**Scalability**:
+- Horizontal pod autoscaling based on CPU (50% threshold)
+- Kafka partitions MUST support scaling to 10+ consumer instances
+- Redis state store MUST support 10,000 reads/writes per second
+- Database connection pooling with 20 connections per backend instance
+
+**Security**:
+- All external traffic MUST use HTTPS/TLS
+- Secrets MUST be stored in cloud secret managers or Kubernetes Secrets
+- Database connections MUST use SSL
+- Kafka connections MUST use SASL authentication
+- RBAC enabled for Kubernetes cluster
+- Pod security policies enforced
+
+**Cost Optimization**:
+- Use cloud free tiers where possible (GCP $300 credit, Azure $200 credit)
+- Use managed services to reduce operational overhead
+- Set resource limits to prevent runaway costs
+- Monitor cloud spending with budget alerts
+
+#### Explicit Non-Goals (Step 5 - OUT OF SCOPE)
+
+- Mobile native applications (iOS, Android)
+- Real-time collaborative editing
+- File attachments to tasks
+- Email notification delivery (Kafka events only)
+- Multi-tenancy with organization support
+- Custom AI model training
+- Video/audio features
+- Social features (sharing, commenting)
+- Third-party integrations (Google Calendar, Slack, etc.)
+- Multi-region deployment
+
+### Step 5 Development Workflow
+
+#### Specification Phase
+
+1. Create feature specification in `specs/features/005-step-5-cloud-deployment/spec.md`
+2. Document event schemas in `specs/events/`
+3. Design Dapr components in `specs/dapr/`
+4. Plan cloud architecture in `specs/cloud/`
+5. Generate implementation plan in `specs/features/005-step-5-cloud-deployment/plan.md`
+6. Break down into tasks in `specs/features/005-step-5-cloud-deployment/tasks.md`
+
+#### Implementation Phase (Recommended Order)
+
+**Part A: Advanced Features (Local Development)**
+
+1. **Database Schema Updates**
+   - Extend Task model with priority, due_date, recurrence_rule, reminder_offset
+   - Create TaskTag and Reminder models
+   - Generate Alembic migration
+   - Apply migration to development database
+
+2. **Advanced Task Features**
+   - Implement priorities (add/update/filter by priority)
+   - Implement tags (add/remove tags, filter by tags)
+   - Implement due dates (set due date, filter by due date range)
+   - Implement recurring tasks (parse RRULE, calculate next occurrence)
+   - Implement search (full-text search with PostgreSQL `tsvector`)
+   - Implement filter (multi-criteria filtering)
+   - Implement sort (multi-field sorting)
+
+3. **Event-Driven Architecture**
+   - Install Dapr CLI and initialize Dapr locally
+   - Create event publishing service (`services/events.py`)
+   - Define event schemas (JSON Schema or Pydantic models)
+   - Publish events on task CRUD operations (create, update, complete, delete)
+   - Test event publishing with Dapr Pub/Sub locally
+
+4. **Reminder Service**
+   - Create new reminder-service application
+   - Implement event consumer (subscribe to task.created, task.updated)
+   - Calculate reminder time from task due_date and reminder_offset
+   - Store scheduled reminders in database
+   - Implement cron processor (triggered every minute via Dapr binding)
+   - Query for due reminders and publish reminders.due events
+   - Mark reminders as sent
+
+**Part B: Local Deployment (Minikube with Dapr)**
+
+5. **Dapr Setup on Minikube**
+   - Install Dapr on Minikube: `dapr init -k`
+   - Verify Dapr installation: `kubectl get pods -n dapr-system`
+   - Deploy Redis for Dapr state store (Helm chart)
+   - Deploy Kafka on Minikube or use Redpanda
+
+6. **Dapr Components Configuration**
+   - Create Dapr component manifests (pubsub, statestore, cron, secrets)
+   - Apply components to Minikube: `kubectl apply -f helm/todo-app/templates/dapr-components/`
+   - Verify components: `kubectl get components`
+
+7. **Containerize Reminder Service**
+   - Create Dockerfile for reminder service
+   - Build image: `docker build -t todo-reminder-service:latest ./backend/reminder-service`
+   - Test container locally
+
+8. **Helm Chart Updates**
+   - Add reminder-deployment.yaml template
+   - Add Dapr annotations to backend, frontend, reminder deployments
+   - Add values for Dapr configuration
+   - Update values-minikube.yaml for local deployment
+
+9. **Deploy to Minikube**
+   - Build all images in Minikube Docker env
+   - Deploy with Helm: `helm install todo-app ./helm/todo-app -f values-minikube.yaml`
+   - Verify all pods running with Dapr sidecars: `kubectl get pods`
+   - Check Dapr logs: `kubectl logs <pod-name> -c daprd`
+   - Test event flow (create task → reminder scheduled → reminder due)
+
+**Part C: Cloud Deployment**
+
+10. **Cloud Infrastructure Setup**
+    - Choose cloud platform (Azure AKS, GCP GKE, or Oracle)
+    - Provision managed Kubernetes cluster
+    - Provision managed PostgreSQL database
+    - Provision managed Redis (or use Dapr state store)
+    - Setup Kafka (Confluent Cloud, Redpanda Cloud, or managed service)
+    - Create container registry (Docker Hub, GitHub Container Registry, or cloud registry)
+
+11. **Dapr Setup on Cloud**
+    - Install Dapr on cloud Kubernetes: `dapr init -k`
+    - Create Dapr components for cloud (update broker URLs, credentials)
+    - Configure Dapr with cloud secrets (Kubernetes Secrets or cloud secret manager)
+    - Apply components: `kubectl apply -f helm/todo-app/templates/dapr-components/`
+
+12. **CI/CD Pipeline Setup**
+    - Create GitHub Actions workflows (.github/workflows/ci.yaml, cd.yaml)
+    - Configure GitHub Secrets (cloud credentials, API keys, database URLs)
+    - Setup container registry authentication
+    - Configure Kubernetes context for deployment
+    - Test CI pipeline (push to branch, verify tests run)
+    - Test CD pipeline (merge to main, verify deployment)
+
+13. **Cloud Deployment via CI/CD**
+    - Push code to main branch
+    - GitHub Actions builds images, pushes to registry
+    - GitHub Actions deploys to cloud Kubernetes via Helm
+    - Verify deployment: `kubectl get pods -n production`
+    - Access application via cloud load balancer
+    - Test all features in production
+
+14. **Monitoring & Logging Setup**
+    - Deploy Prometheus: `helm install prometheus prometheus-community/prometheus`
+    - Deploy Grafana: `helm install grafana grafana/grafana`
+    - Import Grafana dashboards for Kubernetes, Dapr, application metrics
+    - Deploy Zipkin or Jaeger for distributed tracing
+    - Configure log aggregation (Loki, ELK, or cloud logging)
+    - Setup alerts in Prometheus Alertmanager
+    - Verify metrics collection and dashboards
+
+15. **Production Validation**
+    - Run end-to-end tests in production
+    - Verify all advanced features work
+    - Verify event-driven flows (task → reminder)
+    - Load test application (simulate 1000+ concurrent users)
+    - Verify monitoring and alerts trigger correctly
+    - Test scaling (HPA scales up under load)
+    - Test disaster recovery (delete pod, verify auto-restart)
+
+16. **Documentation**
+    - Update README with Step 5 setup instructions
+    - Document cloud deployment process
+    - Document CI/CD pipeline setup
+    - Document monitoring and troubleshooting
+    - Document Dapr component configuration
+    - Create runbook for common operations
+    - Update PHRs
+
+#### Validation Phase
+
+1. All advanced features implemented and working
+2. All intermediate features implemented and working
+3. Event-driven architecture functional (events published and consumed)
+4. Reminder service processing reminders correctly
+5. Application deployed on Minikube with full Dapr stack
+6. Application deployed on cloud Kubernetes (AKS/GKE/OKE)
+7. CI/CD pipeline automating deployments
+8. Monitoring and logging fully operational
+9. All tests passing (unit, integration, end-to-end)
+10. Load tests demonstrate performance SLOs met
+11. Documentation complete and accurate
+
+### Step 5 Quality Gates
+
+Before completing Step 5, the following MUST be verified:
+
+**Advanced Features**:
+- [ ] Recurring tasks implemented with RRULE parsing
+- [ ] Due dates and reminders functional
+- [ ] Priorities implemented and filterable
+- [ ] Tags implemented (add, remove, filter)
+- [ ] Search implemented (full-text search)
+- [ ] Filter implemented (multi-criteria)
+- [ ] Sort implemented (multi-field)
+- [ ] All advanced features accessible via UI and chat
+
+**Event-Driven Architecture**:
+- [ ] Kafka or alternative pub/sub integrated via Dapr
+- [ ] All task events published (created, updated, completed, deleted)
+- [ ] Event schemas defined and versioned
+- [ ] Reminder service consumes events correctly
+- [ ] Cron binding triggers reminder processing
+- [ ] Reminders delivered within SLO (<1 minute from due time)
+
+**Dapr Integration**:
+- [ ] Dapr installed on Minikube and cloud Kubernetes
+- [ ] Pub/Sub component configured and working
+- [ ] State Store component configured and working
+- [ ] Bindings (Cron) component configured and working
+- [ ] Secrets component configured and working
+- [ ] Service Invocation working between services
+- [ ] Dapr sidecars running for all services
+
+**Local Deployment (Minikube)**:
+- [ ] Full application deployed on Minikube
+- [ ] All services running with Dapr sidecars
+- [ ] Kafka/Redpanda deployed or accessible
+- [ ] Redis deployed or accessible
+- [ ] All features working in Minikube environment
+- [ ] Event flows verified end-to-end
+
+**Cloud Deployment**:
+- [ ] Application deployed to Azure AKS, GCP GKE, or Oracle Cloud
+- [ ] Managed Kubernetes cluster provisioned
+- [ ] Managed PostgreSQL database provisioned and connected
+- [ ] Managed Kafka (or Confluent/Redpanda Cloud) integrated
+- [ ] Managed Redis integrated (if used)
+- [ ] Load balancer configured for frontend access
+- [ ] HTTPS/TLS enabled for external traffic
+- [ ] All features working in cloud environment
+
+**CI/CD Pipeline**:
+- [ ] GitHub Actions workflows created (CI and CD)
+- [ ] CI pipeline runs tests on every push
+- [ ] CI pipeline builds and pushes Docker images
+- [ ] CD pipeline deploys to cloud on merge to main
+- [ ] Secrets managed securely in GitHub Secrets
+- [ ] Deployment automation verified (end-to-end)
+
+**Monitoring & Logging**:
+- [ ] Prometheus deployed and collecting metrics
+- [ ] Grafana deployed with dashboards for application, Kafka, Dapr
+- [ ] Distributed tracing enabled (Zipkin or Jaeger)
+- [ ] Log aggregation configured (Loki, ELK, or cloud logging)
+- [ ] Alerts configured for SLO violations
+- [ ] All observability tools functional and accessible
+
+**Performance & Reliability**:
+- [ ] API response time <200ms (p95) verified
+- [ ] Reminder delivery SLO >99% verified
+- [ ] Load tests demonstrate 10,000+ concurrent user support
+- [ ] Horizontal pod autoscaling configured and tested
+- [ ] Liveness and readiness probes configured
+- [ ] Resource limits defined for all containers
+
+**Documentation & Quality**:
+- [ ] Setup instructions for Minikube deployment
+- [ ] Setup instructions for cloud deployment
+- [ ] CI/CD pipeline documentation
+- [ ] Monitoring and troubleshooting runbook
+- [ ] Dapr component configuration documented
+- [ ] All tests passing (>90% coverage maintained)
+- [ ] Code generated by Claude Code (no manual implementation)
+- [ ] PHRs created for all major development sessions
+- [ ] Steps 1-4 functionality still works (not broken by Step 5 changes)
+
+### Step 5 Key Architecture Benefits
+
+| Aspect | Benefit |
+|--------|---------|
+| Advanced Features | Professional task management capabilities, competitive with commercial apps |
+| Event-Driven Architecture | Loose coupling, asynchronous processing, scalability, audit trail |
+| Kafka Integration | Durable event streaming, high throughput, distributed event processing |
+| Dapr Abstraction | Cloud-agnostic distributed application runtime, simplified infrastructure |
+| Multi-Environment Deployment | Development/production parity, safe testing, production readiness |
+| CI/CD Automation | Fast, repeatable deployments, reduced human error, continuous delivery |
+| Monitoring & Observability | Proactive incident response, performance optimization, troubleshooting |
+| Cloud Deployment | Production-grade infrastructure, managed services, global availability |
+| Horizontal Scaling | Handle traffic spikes, cost-efficient resource usage, reliability |
+| Distributed Tracing | Visualize request flows, identify bottlenecks, debug distributed systems |
+
+---
+
+**Version**: 5.0.0 | **Ratified**: 2025-12-31 | **Last Amended**: 2026-01-30

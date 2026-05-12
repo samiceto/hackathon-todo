@@ -1,0 +1,22 @@
+apiVersion: v2
+name: todo-app
+description: A Helm chart for Todo Chatbot application with FastAPI backend and Next.js frontend
+type: application
+version: 1.0.0
+appVersion: "4.0.0"
+
+keywords:
+  - todo
+  - chatbot
+  - kubernetes
+  - minikube
+
+maintainers:
+  - name: Todo Chatbot Team
+    email: dev@example.com
+
+sources:
+  - https://github.com/example/hackathon-todo
+
+# Dependencies (none for Step 4 - all services are part of this chart)
+dependencies: []

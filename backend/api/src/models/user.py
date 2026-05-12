@@ -9,6 +9,8 @@ from typing import Optional, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .task import Task
+    from .conversation import Conversation
+    from .message import Message
 
 
 class User(SQLModel, table=True):
@@ -33,6 +35,10 @@ class User(SQLModel, table=True):
 
     # Relationship to tasks (cascade delete: when user deleted, all tasks deleted)
     tasks: List["Task"] = Relationship(back_populates="user", cascade_delete=True)
+
+    # Step 3: Relationships to conversations and messages
+    conversations: List["Conversation"] = Relationship(back_populates="user", cascade_delete=True)
+    messages: List["Message"] = Relationship(back_populates="user", cascade_delete=True)
 
     class Config:
         """Pydantic configuration."""

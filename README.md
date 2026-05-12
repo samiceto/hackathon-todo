@@ -1,429 +1,534 @@
-# Hackathon Todo
+# Hackathon Todo 🚀
 
-**Progressive task management application** evolving from console app to cloud-native AI-powered system through 5 incremental phases.
+A progressive task management application built in 5 incremental steps, evolving from a simple CLI tool to a cloud-deployed full-stack application with AI capabilities.
 
----
+**Current Status**: Step 5 - Advanced Cloud Deployment 🔨 (User Stories 1-9 Complete)
 
-## 🎯 Current Status
+## 📋 Project Overview
 
-- ✅ **Step 1 Complete**: Console application with 97.44% test coverage (129 tests)
-- ✅ **Step 2 Complete**: Full-stack web application with FastAPI + Next.js + PostgreSQL
-- 📋 **Steps 3-5 Planned**: AI chatbot, Kubernetes deployment, cloud-native features
+This project demonstrates Spec-Driven Development (SDD) by building a complete application through iterative evolution:
 
----
+- **Step 1** ✅: Console Todo App (Python CLI with in-memory storage)
+- **Step 2** ✅: Web Application (FastAPI backend + Next.js frontend + PostgreSQL)
+- **Step 3** ✅: AI Chatbot Integration (OpenAI Agents SDK + ChatKit UI)
+- **Step 4** ✅: Kubernetes Deployment (Minikube + Helm Charts + Docker)
+- **Step 5** 🔨: **Advanced Cloud Deployment** (Event-Driven + Dapr + AWS k3s) - **IN PROGRESS**
 
-## 📁 Monorepo Structure
+## 🎯 Quick Start
 
-This project is organized as a monorepo to support gradual evolution:
+### Step 5: Deploy to AWS k3s (Current)
 
-```
-hackathon-todo/                    # Root
-├── backend/                       # Backend services
-│   ├── console/                  # ✅ Step 1: Console app (COMPLETE)
-│   │   ├── src/hackathon_todo/  # Console source code
-│   │   ├── tests/               # 129 tests, 97.44% coverage
-│   │   └── README.md            # Console app documentation
-│   └── api/                      # ✅ Step 2: FastAPI web API (COMPLETE)
-├── frontend/                      # ✅ Step 2: Next.js web app (COMPLETE)
-├── specs/                         # Organized specifications
-│   ├── features/                 # Feature specifications
-│   ├── api/                      # API endpoint specs
-│   ├── database/                 # Database schema specs
-│   ├── ui/                       # UI component specs
-│   ├── overview.md              # Project overview
-│   └── architecture.md          # System architecture
-├── .spec-kit/                     # Monorepo configuration
-│   └── config.yaml               # Phase definitions, tech stack
-├── history/                       # Development history (PHRs)
-└── README.md                     # This file
-```
+Deploy the full-stack Todo App with advanced features (recurring tasks, reminders, event-driven architecture) to AWS using k3s:
 
----
-
-## 🚀 Quick Start
-
-### Step 1: Console Application (Available Now) ✅
-
-**Prerequisites**:
-- Python 3.13 or higher
-- [UV](https://docs.astral.sh/uv/) package manager
-
-**Installation & Run**:
 ```bash
-# Clone repository
-git clone <repository-url>
-cd hackathon-todo
+# Prerequisites: AWS account (free tier), Docker, kubectl, Helm 3.x, Dapr CLI
 
-# Navigate to console app
-cd backend/console
+# 1. Provision AWS infrastructure (see cloud-provisioning.md)
+# - Launch EC2 t2.medium instance
+# - Install k3s
+# - Configure security groups
 
-# Install dependencies
-uv sync
+# 2. Build and push Docker images to Docker Hub
+docker login
+docker build -t <your-username>/todo-backend:latest ./backend/api
+docker build -t <your-username>/todo-frontend:latest ./frontend
+docker build -t <your-username>/todo-reminder-service:latest ./backend/reminder-service
+docker push <your-username>/todo-backend:latest
+docker push <your-username>/todo-frontend:latest
+docker push <your-username>/todo-reminder-service:latest
 
-# Run application
-uv run hackathon-todo
-# OR
-uv run python -m hackathon_todo.main
+# 3. Configure kubectl for AWS k3s
+export KUBECONFIG=~/.kube/config-aws
+
+# 4. Install Dapr
+dapr init -k
+
+# 5. Deploy application
+./scripts/deploy-to-aws.sh
+
+# 6. Access the application
+# Frontend: http://<ELASTIC_IP>:30000
+# Backend: http://<ELASTIC_IP>:30001
 ```
 
-**Testing**:
+**Detailed Guides**:
+- [Cloud Provisioning Guide](specs/005-step-5-cloud-deployment/design/cloud-provisioning.md)
+- [Cloud Deployment Guide](specs/005-step-5-cloud-deployment/design/cloud-deployment.md)
+
+### Step 5: Run on Minikube (Local Development)
+
+Deploy the complete Step 5 stack locally with Minikube:
+
 ```bash
-cd backend/console
+# Prerequisites: Docker, Minikube 1.30+, kubectl, Helm 3.x, Dapr CLI
 
-# Run all tests
-uv run pytest
+# 1. Setup Minikube
+./scripts/setup-minikube.sh
 
-# With coverage
-uv run pytest --cov=src/hackathon_todo --cov-report=html
+# 2. Install Dapr
+./scripts/install-dapr-minikube.sh
 
-# Verbose output
-uv run pytest -v
+# 3. Build images
+./scripts/build-local-images.sh
+
+# 4. Deploy application
+./scripts/deploy-to-minikube.sh
+
+# 5. Run end-to-end tests
+./scripts/e2e-test-minikube.sh
+
+# 6. Access the application
+minikube service todo-app-frontend
 ```
 
-### Step 2: Full-Stack Web Application (Available Now) ✅
+**Detailed Guide**: [Minikube Quickstart](specs/005-step-5-cloud-deployment/design/quickstart.md)
 
-**Prerequisites**:
-- Python 3.13 or higher + [UV](https://docs.astral.sh/uv/)
-- Node.js 20+ and npm 10+
-- Neon PostgreSQL database
+### Step 4: Run on Kubernetes (Previous)
 
-**Backend Setup**:
+Deploy the full-stack Todo Chatbot application to a local Kubernetes cluster using Minikube:
+
 ```bash
-# Navigate to backend API
+# Prerequisites: Docker Desktop 24+, Minikube 1.32+, kubectl 1.28+, Helm 3.x
+
+# 1. Start Minikube cluster
+minikube start --driver=docker --cpus=2 --memory=4096
+
+# 2. Configure Docker environment
+eval $(minikube docker-env)
+
+# 3. Build Docker images
 cd backend/api
+docker build -t todo-backend:latest .
 
-# Copy environment file
-cp .env.example .env
-# Edit .env with your DATABASE_URL, BETTER_AUTH_SECRET, CORS_ORIGINS
+cd ../../frontend
+docker build -t todo-frontend:latest .
 
-# Install dependencies
-uv sync
+# 4. Deploy with Helm
+cd ..
+helm install todo-app ./helm/todo-app \
+  -f helm/todo-app/values-dev.yaml \
+  --set backend.secrets.openaiApiKey=$OPENAI_API_KEY \
+  --set backend.secrets.betterAuthSecret=your-secret-here
 
-# Run database migrations
-uv run alembic upgrade head
-
-# Start backend server (http://localhost:8000)
-uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# 5. Access the application
+# Frontend: http://$(minikube ip):30000
+# Backend: kubectl port-forward svc/todo-app-backend 8000:8000
+minikube service todo-app-frontend
 ```
 
-**Frontend Setup** (in a new terminal):
+**Detailed Guide**: See [specs/004-k8s-deployment/quickstart.md](specs/004-k8s-deployment/quickstart.md)
+
+### Step 3: Run Locally (Full-Stack with AI)
+
 ```bash
-# Navigate to frontend
+# Backend
+cd backend/api
+uv sync
+cp .env.example .env  # Add your OpenAI API key and database URL
+uv run uvicorn src.main:app --reload
+
+# Frontend (new terminal)
 cd frontend
-
-# Copy environment file
-cp .env.local.example .env.local
-# Edit .env.local with BETTER_AUTH_SECRET, DATABASE_URL, NEXT_PUBLIC_API_URL
-
-# Install dependencies
 npm install
-
-# Start frontend server (http://localhost:3000)
+cp .env.local.example .env.local  # Configure API URL
 npm run dev
+
+# Access: http://localhost:3000
 ```
 
-**Access the Application**:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+### Step 1: Run Console App
 
----
-
-## 📚 Console Application Features (Step 1)
-
-The current working console application includes:
-
-### Core Features
-- ✅ **Add Tasks** - Create tasks with title and optional description
-- ✅ **View Tasks** - See all tasks in formatted list with status indicators
-- ✅ **Mark Complete** - Toggle tasks between complete (✓) and incomplete (○)
-- ✅ **Update Tasks** - Edit task titles and descriptions
-- ✅ **Delete Tasks** - Remove tasks from your list
-- ✅ **Interactive Menu** - Easy-to-use menu-driven interface
-- ✅ **Error Handling** - Robust validation and retry logic
-- ✅ **Graceful Exit** - Clean shutdown with Ctrl+C support
-
-### Usage Example
-
+```bash
+cd backend/console
+uv sync
+uv run hackathon-todo
 ```
-==================================================
-Welcome to Hackathon Todo!
-Your simple command-line task manager
-==================================================
-
-==============================
-=== Hackathon Todo Menu ===
-==============================
-1. Add Task
-2. View Tasks
-3. Mark Complete/Incomplete
-4. Update Task
-5. Delete Task
-6. Exit
-==============================
-
-Enter your choice (1-6): 1
-
-Enter task title: Buy groceries
-Enter task description (optional, press Enter to skip): Milk, eggs, bread
-
-Task added successfully! (ID: 1)
-Title: Buy groceries
-Description: Milk, eggs, bread
-```
-
-**Full console app documentation**: See [backend/console/README.md](backend/console/README.md)
-
----
-
-## 🗺️ Roadmap
-
-### Step 1: Console Application ✅ **COMPLETE**
-**Status**: Implementation complete, all tests passing
-
-**Deliverables**:
-- Python 3.13+ console application
-- In-memory task storage
-- 5 core CRUD features
-- 97.44% test coverage (129 tests)
-- Clean architecture (data → storage → UI → application)
-
-**Tech Stack**: Python 3.13+, UV, pytest, in-memory storage
-
----
-
-### Step 2: Full-Stack Web Application ✅ **COMPLETE**
-**Status**: Full-stack web application implemented and tested
-
-**Features**:
-- RESTful API with FastAPI
-- Next.js 16+ web frontend
-- PostgreSQL database (Neon serverless)
-- User authentication (Better Auth + JWT)
-- Responsive web UI
-- Docker containerization
-
-**Tech Stack**:
-- **Backend**: FastAPI, SQLModel, Neon PostgreSQL, Better Auth
-- **Frontend**: Next.js 16+, React 19+, TypeScript, Tailwind CSS, shadcn/ui
-- **Infrastructure**: Docker, Docker Compose
-
-**Migration Path**:
-- Console models → SQLModel ORM
-- In-memory storage → PostgreSQL
-- Console UI → Next.js components
-- 129 console tests → API integration tests
-
----
-
-### Step 3: AI-Powered Chatbot 📋 **PLANNED**
-**Status**: Specifications planned, implementation future
-
-**Planned Features**:
-- OpenAI Agents SDK integration
-- Model Context Protocol (MCP) server
-- Conversational task management
-- Natural language parsing
-- Intelligent task suggestions
-
-**Tech Stack**: OpenAI Agents SDK, MCP SDK, OpenAI API (GPT-4), WebSocket
-
-**Example Interactions**:
-- "Add task: Buy groceries tomorrow at 3pm" → Parses and creates task
-- "What should I work on next?" → AI-powered prioritization
-- "Summarize my week" → Task completion analysis
-
----
-
-### Step 4: Local Kubernetes Deployment 📋 **PLANNED**
-**Status**: Planned for future implementation
-
-**Planned Features**:
-- Dockerized multi-service application
-- Kubernetes manifests (Deployments, Services, Ingress)
-- Helm charts for orchestration
-- Minikube local cluster
-
-**Tech Stack**: Docker, Minikube, Kubernetes, Helm
-
----
-
-### Step 5: Advanced Cloud Deployment 📋 **PLANNED**
-**Status**: Planned for future implementation
-
-**Planned Features**:
-- CI/CD pipeline (GitHub Actions)
-- Event-driven architecture (Kafka + Dapr)
-- Monitoring (Prometheus + Grafana)
-- AIOps with kubectl-ai
-
-**Tech Stack**: GitHub Actions, Kafka, Dapr, Prometheus, Grafana, kubectl-ai
-
----
 
 ## 🏗️ Architecture
 
-### Current: Console Application (Step 1)
+### Monorepo Structure
 
-**Layered Architecture**:
 ```
-Application Layer (main.py)     ← Menu loop, routing
-       ↓
-UI Layer (ui.py)                ← User interaction, formatting
-       ↓
-Storage Layer (storage.py)      ← CRUD operations
-       ↓
-Data Layer (models.py)          ← Task entity, validation
+hackathon-todo/
+├── backend/
+│   ├── console/          # Step 1: Python CLI app
+│   ├── api/              # Steps 2-5: FastAPI application
+│   │   ├── Dockerfile    # Step 4-5: Backend container
+│   │   └── src/          # API, agents, MCP, auth
+│   └── reminder-service/ # Step 5: Event-driven reminder processor
+│       ├── Dockerfile    # Reminder service container
+│       └── src/          # Event consumers, cron processor
+├── frontend/             # Steps 2-5: Next.js application
+│   ├── Dockerfile        # Step 4-5: Frontend container
+│   └── src/              # UI components, ChatKit
+├── helm/                 # Steps 4-5: Helm Charts
+│   └── todo-app/         # Kubernetes deployment
+│       ├── Chart.yaml
+│       ├── values.yaml          # Production defaults
+│       ├── values-dev.yaml      # Minikube overrides
+│       ├── values-prod-aws.yaml # AWS k3s production
+│       ├── templates/           # K8s resource templates
+│       └── dependencies/        # Redpanda, Redis YAMLs
+├── scripts/              # Step 5: Deployment automation
+│   ├── setup-minikube.sh
+│   ├── install-dapr-minikube.sh
+│   ├── build-local-images.sh
+│   ├── deploy-to-minikube.sh
+│   ├── deploy-to-aws.sh
+│   └── e2e-test-minikube.sh
+├── specs/                # Feature specifications
+│   ├── 001-step-1-core-features/
+│   ├── 003-step-3-ai-chatbot/
+│   ├── 004-k8s-deployment/
+│   └── 005-step-5-cloud-deployment/
+├── history/              # Prompt History Records (PHRs)
+└── .specify/             # SDD templates & scripts
 ```
 
-**Storage**: In-memory dictionary (session-based, data lost on exit)
+### Tech Stack
 
-**Full architecture documentation**: See [specs/architecture.md](specs/architecture.md)
+**Step 5 (Current - Advanced Cloud Deployment)**:
+- **Event Streaming**: Kafka (Redpanda for local/self-hosted)
+- **State Management**: Redis (self-hosted in cluster)
+- **Distributed Runtime**: Dapr 1.12+ (Pub/Sub, State Store, Cron, Secrets)
+- **Reminder Service**: FastAPI microservice with event consumers
+- **Cloud Platform**: AWS EC2 with k3s (free tier compatible)
+- **Advanced Features**: Recurring tasks, due dates, reminders, priorities, tags, search/filter/sort
 
-### Future: Full-Stack Web Application (Step 2+)
+**Step 4 (Kubernetes)**:
+- **Container Runtime**: Docker 24+ (multi-stage builds)
+- **Orchestration**: Kubernetes 1.28+ (via Minikube or k3s)
+- **Package Manager**: Helm 3.x (declarative infrastructure)
+- **Health Checks**: Liveness & readiness probes
+- **Resource Management**: CPU/memory limits enforced
 
-**High-Level System**:
+**Step 3 (AI Chatbot)**:
+- **AI Framework**: OpenAI Agents SDK (Swarm multi-agent)
+- **Frontend Chat**: OpenAI ChatKit (React components)
+- **NLP**: OpenAI GPT-4 for task management
+- **MCP Protocol**: Tool calling for database operations
+
+**Steps 2-3 (Web Application)**:
+- **Backend**: FastAPI, SQLModel, Uvicorn, Better Auth
+- **Frontend**: Next.js 16+, React, Tailwind CSS
+- **Database**: Neon Serverless PostgreSQL (external, not containerized)
+- **Auth**: Better Auth with JWT verification
+
+**Step 1 (Console)**:
+- **Language**: Python 3.13+
+- **Package Manager**: UV
+- **Testing**: pytest (97.44% coverage)
+
+## 🚀 Step 5: Advanced Features
+
+### Event-Driven Architecture
+
+**Pub/Sub Pattern with Dapr**:
+- Task lifecycle events (created, updated, completed, deleted)
+- Reminder events published when due
+- Asynchronous processing via Kafka topics
+- Decoupled microservices communication
+
+**Components**:
+- **Backend API**: Publishes events on task operations
+- **Reminder Service**: Consumes events, schedules reminders, publishes reminder.due events
+- **Kafka (Redpanda)**: Message broker for event streaming
+- **Redis**: State store for Dapr actors and caching
+
+### Advanced Task Management
+
+**Recurring Tasks**:
+- RRULE-based recurrence patterns (daily, weekly, monthly)
+- Automatic task instance generation
+- Human-readable recurrence display
+
+**Due Dates & Reminders**:
+- Set task deadlines with date/time
+- Configurable reminder offsets (e.g., 30 minutes before)
+- Reminder events published to Kafka for notification services
+
+**Priorities & Tags**:
+- Priority levels: urgent, high, medium, low
+- Multiple tags per task (max 10)
+- Color-coded priority badges
+
+**Search, Filter & Sort**:
+- Full-text search on title and description (PostgreSQL tsvector)
+- Multi-criteria filtering (status, priority, tags, due date ranges)
+- Flexible sorting (created_at, due_date, priority, title)
+
+### Deployment Options
+
+**Minikube (Local Development)**:
+- Single-command deployment scripts
+- Self-hosted Kafka (Redpanda) and Redis
+- NodePort services for easy access
+- End-to-end test automation
+
+**AWS k3s (Production - Free Tier)**:
+- Lightweight Kubernetes on EC2 t2.medium
+- Neon PostgreSQL (free tier, external)
+- Self-hosted Redpanda and Redis in cluster
+- Cost: $0/month within AWS free tier (first 12 months)
+
+## 🐳 Kubernetes Deployment (Steps 4-5)
+
+### Helm Chart Features
+
+- **Zero-Downtime Updates**: Rolling update strategy (maxSurge: 1, maxUnavailable: 0)
+- **Health Checks**: Liveness and readiness probes on all pods
+- **Resource Limits**: CPU and memory constraints enforced
+- **Configuration Management**: ConfigMaps (non-sensitive) + Secrets (API keys)
+- **Auto-Scaling Ready**: HPA configuration (disabled for Minikube)
+- **Environment-Specific Values**: values-dev.yaml (Minikube), values-prod.yaml (cloud)
+
+### Deployed Components
+
+| Component | Replicas | Resources (Requests/Limits) | Health Checks | Access |
+|-----------|----------|----------------------------|---------------|--------|
+| Backend (FastAPI) | 1 (dev) / 2 (prod) | CPU: 250m/500m, Memory: 256Mi/512Mi | /health endpoint | ClusterIP (NodePort in dev) |
+| Frontend (Next.js) | 1 (dev) / 2 (prod) | CPU: 100m/200m, Memory: 128Mi/256Mi | / endpoint | NodePort (port 30000) |
+| Reminder Service (Step 5) | 1 | CPU: 100m/200m, Memory: 128Mi/256Mi | /health endpoint | ClusterIP (internal only) |
+| Redpanda (Kafka - Step 5) | 1 | CPU: 100m/500m, Memory: 512Mi/1Gi | rpk cluster health | ClusterIP (internal only) |
+| Redis (Step 5) | 1 | CPU: 50m/200m, Memory: 128Mi/256Mi | redis-cli ping | ClusterIP (internal only) |
+
+### Dapr Components (Step 5)
+
+| Component | Type | Purpose | Configuration |
+|-----------|------|---------|---------------|
+| pubsub-kafka | pubsub.kafka | Event streaming | Redpanda broker at redpanda:9092 |
+| statestore-redis | state.redis | State management | Redis at redis:6379 |
+| cron-reminder-processor | bindings.cron | Scheduled tasks | Every 1 minute trigger |
+| kubernetes-secrets | secretstores.kubernetes | Secret management | K8s native secrets |
+
+### Helm Commands
+
+```bash
+# Install/Upgrade
+helm upgrade --install todo-app ./helm/todo-app -f helm/todo-app/values-dev.yaml
+
+# Rollback
+helm rollback todo-app
+
+# View history
+helm history todo-app
+
+# Uninstall
+helm uninstall todo-app
 ```
-Browser → Next.js Frontend → FastAPI Backend → PostgreSQL Database
-                                    ↓
-                            OpenAI Agents (Step 3+)
+
+### Kubernetes Operations
+
+```bash
+# Check pods
+kubectl get pods -l app.kubernetes.io/instance=todo-app
+
+# View logs
+kubectl logs -f -l app.kubernetes.io/component=backend
+
+# Check resource usage (requires metrics-server)
+kubectl top pods -l app.kubernetes.io/instance=todo-app
+
+# Port forward backend
+kubectl port-forward svc/todo-app-backend 8000:8000
+
+# Access frontend via Minikube
+minikube service todo-app-frontend
 ```
-
-**Detailed architecture diagrams**: See [specs/architecture.md](specs/architecture.md)
-
----
-
-## 📖 Documentation
-
-### Core Documents
-- **[specs/overview.md](specs/overview.md)** - Comprehensive project overview, all 5 phases
-- **[specs/architecture.md](specs/architecture.md)** - Detailed architecture for all phases
-- **[.spec-kit/config.yaml](.spec-kit/config.yaml)** - Monorepo configuration, phase definitions
-
-### Component-Specific
-- **[backend/console/README.md](backend/console/README.md)** - Console app documentation (Step 1)
-- **[CLAUDE.md](CLAUDE.md)** - Root development context
-- **[backend/CLAUDE.md](backend/CLAUDE.md)** - Backend development context
-- **[frontend/CLAUDE.md](frontend/CLAUDE.md)** - Frontend development context (placeholder)
-
-### Specifications
-- **[specs/features/](specs/features/)** - Feature specifications
-- **[specs/api/](specs/api/)** - API endpoint specifications (planned)
-- **[specs/database/](specs/database/)** - Database schema specifications (planned)
-- **[specs/ui/](specs/ui/)** - UI component specifications (planned)
-
-### Historical Reference
-- **[specs/001-step-1-core-features/](specs/001-step-1-core-features/)** - Original Step 1 specs
-- **[history/prompts/](history/prompts/)** - Prompt History Records (PHRs)
-
----
 
 ## 🧪 Testing
 
-### Console Application (Step 1)
+### Step 5: End-to-End Tests
 
-**Coverage**: 97.44% (129 tests passing)
+```bash
+# Minikube deployment tests
+./scripts/e2e-test-minikube.sh
+
+# Manual tests
+# 1. Create recurring task
+curl -X POST http://$(minikube ip):30001/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Daily Standup","recurrence_rule":"FREQ=DAILY","priority":"high"}'
+
+# 2. Create task with reminder
+curl -X POST http://$(minikube ip):30001/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Meeting","due_date":"2026-02-10T14:00:00Z","reminder_offset":1800}'
+
+# 3. Check Kafka topics
+kubectl exec -it redpanda-0 -- rpk topic list
+
+# 4. Check Redis connectivity
+kubectl exec -it redis-0 -- redis-cli ping
+
+# 5. View reminder service logs
+kubectl logs -f -l app.kubernetes.io/component=reminder-service -c reminder-service
+```
+
+### Step 4: Kubernetes Deployment Tests
+
+```bash
+# Health checks
+kubectl get pods  # All pods should be Ready 1/1
+
+# Backend API
+kubectl port-forward svc/todo-app-backend 8000:8000
+curl http://localhost:8000/health  # Should return {"status": "healthy"}
+
+# Frontend UI
+minikube service todo-app-frontend  # Opens browser
+
+# Rolling update (zero downtime)
+helm upgrade todo-app ./helm/todo-app -f helm/todo-app/values-dev.yaml
+kubectl get pods -w  # Watch rolling update
+
+# Auto-restart (self-healing)
+kubectl delete pod -l app.kubernetes.io/component=backend
+kubectl get pods  # New pod should be created automatically
+```
+
+### Step 1: Console App Tests
 
 ```bash
 cd backend/console
-
-# Run all tests
-uv run pytest
-
-# With coverage report
-uv run pytest --cov=src/hackathon_todo --cov-report=html
-
-# Specific test file
-uv run pytest tests/test_models.py
-
-# Verbose output
-uv run pytest -v
+uv run pytest                    # Run all tests
+uv run pytest -v                 # Verbose output
+uv run pytest --cov             # Coverage report (97.44%)
 ```
 
-**Test Organization**:
-- `test_models.py` - Task dataclass tests
-- `test_storage.py` - CRUD operation tests
-- `test_ui.py` - UI function tests
-- `test_integration.py` - End-to-end workflow tests
+## 📚 Documentation
 
----
+### Step 5: Advanced Cloud Deployment
 
-## 🛠️ Development Methodology
+- **Minikube Quickstart**: [specs/005-step-5-cloud-deployment/design/quickstart.md](specs/005-step-5-cloud-deployment/design/quickstart.md) - Complete local deployment guide
+- **Cloud Provisioning**: [specs/005-step-5-cloud-deployment/design/cloud-provisioning.md](specs/005-step-5-cloud-deployment/design/cloud-provisioning.md) - AWS k3s infrastructure setup
+- **Cloud Deployment**: [specs/005-step-5-cloud-deployment/design/cloud-deployment.md](specs/005-step-5-cloud-deployment/design/cloud-deployment.md) - Application deployment to AWS
+- **Feature Spec**: [specs/005-step-5-cloud-deployment/spec.md](specs/005-step-5-cloud-deployment/spec.md) - 11 user stories with acceptance scenarios
+- **Implementation Plan**: [specs/005-step-5-cloud-deployment/plan.md](specs/005-step-5-cloud-deployment/plan.md) - Technical decisions and architecture
+- **Implementation Tasks**: [specs/005-step-5-cloud-deployment/tasks.md](specs/005-step-5-cloud-deployment/tasks.md) - Detailed task breakdown
 
-### Spec-Driven Development (SDD)
+### Step 4: Kubernetes Deployment
 
-**Core Principle**: Specifications define *what* to build; Claude Code generates *how* to build it.
+- **Quickstart Guide**: [specs/004-k8s-deployment/quickstart.md](specs/004-k8s-deployment/quickstart.md) - Complete deployment walkthrough (30 minutes)
+- **Architecture Plan**: [specs/004-k8s-deployment/plan.md](specs/004-k8s-deployment/plan.md) - Technical decisions and structure
+- **Implementation Tasks**: [specs/004-k8s-deployment/tasks.md](specs/004-k8s-deployment/tasks.md) - Detailed task breakdown (97 tasks)
+- **Data Model**: [specs/004-k8s-deployment/data-model.md](specs/004-k8s-deployment/data-model.md) - Container specifications
+- **Contracts**: [specs/004-k8s-deployment/contracts/](specs/004-k8s-deployment/contracts/) - Kubernetes resource specs
 
-**Workflow**:
-1. **Specify** - Define requirements in `specs/<type>/<feature>.md`
-2. **Plan** - Create implementation plan with architecture decisions
-3. **Tasks** - Break down into testable, actionable tasks
-4. **Implement** - Execute via Claude Code using TDD
-5. **Validate** - Verify acceptance criteria met
+### Step 3: AI Chatbot
 
-**Benefits**:
-- Forces clear thinking about requirements before implementation
-- Creates reusable intelligence for future projects
-- Ensures traceability and documentation
-- Enables AI-assisted development at scale
+- **Feature Spec**: [specs/003-step-3-ai-chatbot/spec.md](specs/003-step-3-ai-chatbot/spec.md)
+- **Implementation Plan**: [specs/003-step-3-ai-chatbot/plan.md](specs/003-step-3-ai-chatbot/plan.md)
 
-### Quality Standards
+### Step 1: Console App
 
-**Testing**:
-- Minimum 90% code coverage (current: 97.44%)
-- Test-Driven Development (TDD)
-- Unit, integration, and E2E tests
+- **Console README**: [backend/console/README.md](backend/console/README.md)
+- **Feature Spec**: [specs/001-step-1-core-features/spec.md](specs/001-step-1-core-features/spec.md)
 
-**Code Quality**:
-- Type hints (Python), TypeScript (frontend)
-- Clean architecture principles
-- Separation of concerns
-- Comprehensive documentation
+### Project-Level
 
----
+- **Constitution**: [.specify/memory/constitution.md](.specify/memory/constitution.md) - Development principles
+- **CLAUDE.md**: [CLAUDE.md](CLAUDE.md) - AI assistant context and guidelines
+
+## 🎓 Development Workflow
+
+This project uses **Spec-Driven Development (SDD)** with AI assistance:
+
+1. **Specify** (`/sp.specify`): Define requirements in natural language
+2. **Plan** (`/sp.plan`): Create technical implementation plan
+3. **Tasks** (`/sp.tasks`): Break down into testable tasks
+4. **Implement** (`/sp.implement`): Execute tasks with TDD approach
+5. **Validate**: Verify all acceptance criteria met
+
+All development sessions are documented in [history/prompts/](history/prompts/) as Prompt History Records (PHRs).
+
+## 🔧 Troubleshooting
+
+### Kubernetes Issues
+
+**Pods not starting:**
+```bash
+kubectl describe pod <pod-name>  # Check events
+kubectl logs <pod-name>          # Check application logs
+```
+
+**Metrics-server not ready:**
+```bash
+# Image pull can take time
+kubectl get pods -n kube-system -l k8s-app=metrics-server
+# Wait for pod to reach Running status
+```
+
+**Cannot access frontend:**
+```bash
+# Check NodePort service
+kubectl get svc todo-app-frontend
+# Get Minikube IP
+minikube ip
+# Access: http://<minikube-ip>:30000
+```
+
+**Health checks failing:**
+```bash
+# Check probe configuration
+kubectl describe pod <pod-name> | grep -A 10 "Liveness"
+# Port-forward and test manually
+kubectl port-forward svc/todo-app-backend 8000:8000
+curl http://localhost:8000/health
+```
+
+### Database Connection Issues
+
+The Neon database is external (not containerized). Ensure:
+- Database URL is correct in values-dev.yaml
+- Network connectivity from Minikube to Neon (should work by default)
+
+### Image Pull Issues
+
+Images are built locally using Minikube's Docker daemon:
+```bash
+# Configure Docker to use Minikube
+eval $(minikube docker-env)
+
+# Verify images exist
+docker images | grep todo
+
+# Rebuild if needed
+docker build -t todo-backend:latest backend/api/
+docker build -t todo-frontend:latest frontend/
+```
 
 ## 🤝 Contributing
 
-This is a hackathon project demonstrating Spec-Driven Development methodology.
+This is a demonstration project for Spec-Driven Development. To contribute:
 
-### Development Process
+1. Follow the SDD workflow (specify → plan → tasks → implement)
+2. Create PHRs for all development sessions
+3. Maintain test coverage >90%
+4. Update documentation alongside code changes
 
-1. Review specifications in `specs/`
-2. Follow TDD approach (write tests first)
-3. Maintain >90% test coverage
-4. Document changes in Prompt History Records (PHRs)
-5. Adhere to clean architecture principles
+## 📄 License
 
-**See**: [CLAUDE.md](CLAUDE.md) for detailed development guidelines
-
----
-
-## 📝 License
-
-[Specify license here]
-
----
+[Add your license here]
 
 ## 🙏 Acknowledgments
 
-**Built with**:
-- Python 3.13, UV package manager, pytest
-- Spec-Driven Development methodology
-- Claude Code for implementation
-
-**Part of**: Hackathon II - The Evolution of Todo
-
----
-
-## 📞 Support
-
-For questions or issues:
-- Open an issue in the repository
-- Review documentation in `specs/` directory
-- Check `history/prompts/` for development history
+Built with:
+- [Dapr](https://dapr.io/) - Distributed application runtime
+- [Redpanda](https://redpanda.com/) - Kafka-compatible event streaming
+- [OpenAI Agents SDK](https://github.com/openai/swarm) - Multi-agent orchestration
+- [OpenAI ChatKit](https://github.com/openai/chatkit) - Chat UI components
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+- [Next.js](https://nextjs.org/) - React framework for production
+- [Kubernetes](https://kubernetes.io/) - Container orchestration
+- [Helm](https://helm.sh/) - Kubernetes package manager
+- [k3s](https://k3s.io/) - Lightweight Kubernetes
+- [Neon](https://neon.tech/) - Serverless PostgreSQL
 
 ---
 
-**Made with ❤️ for the Hackathon**
+**Last Updated**: 2026-02-09 (Step 5 - User Stories 1-9 Complete: Advanced Features + Event-Driven Architecture + Cloud Deployment)
 
-**Last Updated**: 2026-01-09 (Step 2 Complete - Full-stack web application)
+ # After cloning:                                                                                         cp backend/api/.env.example backend/api/.env              
+  cp frontend/.env.local.example frontend/.env.local
+  # Edit both files with real credentials

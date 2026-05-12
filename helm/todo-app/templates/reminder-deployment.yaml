@@ -1,0 +1,97 @@
+{{- if .Values.reminderService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "todo-app.fullname" . }}-reminder-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: reminder-service
+spec:
+  replicas: {{ .Values.reminderService.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "todo-app.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: reminder-service
+  template:
+    metadata:
+      annotations:
+        # Dapr sidecar configuration
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "reminder-service"
+        dapr.io/app-port: "8001"
+        dapr.io/enable-api-logging: "true"
+        dapr.io/log-level: {{ .Values.dapr.logLevel | default "info" | quote }}
+        dapr.io/metrics-port: "9091"
+        dapr.io/http-max-request-size: "4"
+        dapr.io/http-read-buffer-size: "4"
+      labels:
+        {{- include "todo-app.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: reminder-service
+        app: reminder-service
+    spec:
+      {{- with .Values.reminderService.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "todo-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.reminderService.podSecurityContext | nindent 8 }}
+      containers:
+      - name: reminder-service
+        securityContext:
+          {{- toYaml .Values.reminderService.securityContext | nindent 12 }}
+        image: "{{ .Values.reminderService.image.repository }}:{{ .Values.reminderService.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.reminderService.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8001
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8001"
+        - name: LOG_LEVEL
+          value: {{ .Values.reminderService.logLevel | default "INFO" | quote }}
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "todo-app.fullname" . }}-backend-config
+              key: DATABASE_URL
+        - name: DAPR_HTTP_PORT
+          value: "3500"
+        - name: DAPR_GRPC_PORT
+          value: "50001"
+        {{- with .Values.reminderService.env }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        resources:
+          {{- toYaml .Values.reminderService.resources | nindent 12 }}
+      {{- with .Values.reminderService.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.reminderService.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.reminderService.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

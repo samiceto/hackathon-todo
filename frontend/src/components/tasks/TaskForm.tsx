@@ -1,29 +1,29 @@
-/**
- * TaskForm Component - Phases 5 & 6
- *
- * An elegant, inviting form for creating and editing tasks.
- * Designed to make task capture and updates feel effortless and rewarding.
- */
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import Input from '@/components/ui/Input'
-import Button from '@/components/ui/Button'
 import { Task } from '@/lib/api/tasks'
+import RecurrenceInput from './RecurrenceInput'
+import DueDatePicker from './DueDatePicker'
+import ReminderOffsetInput from './ReminderOffsetInput'
+import PrioritySelector from './PrioritySelector'
+import TagInput from './TagInput'
+
+export interface TaskFormData {
+  title: string
+  description: string
+  priority?: string
+  due_date?: string | null
+  recurrence_rule?: string | null
+  reminder_offset?: number | null
+  tags?: string[]
+}
 
 export interface TaskFormProps {
-  /** Callback when task is successfully created */
-  onTaskCreated?: (task: { title: string; description: string }) => void
-  /** Callback when task is successfully updated */
-  onTaskUpdated?: (taskId: number, task: { title: string; description: string }) => void
-  /** Callback when form is cancelled */
+  onTaskCreated?: (task: TaskFormData) => void
+  onTaskUpdated?: (taskId: number, task: TaskFormData) => void
   onCancel?: () => void
-  /** Loading state during submission */
   isSubmitting?: boolean
-  /** Show form in expanded state by default */
   isExpanded?: boolean
-  /** Edit mode - provide existing task to edit */
   editTask?: Task | null
 }
 
@@ -39,305 +39,179 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [isExpanded, setIsExpanded] = useState(initialExpanded || isEditMode)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [errors, setErrors] = useState<{ title?: string; description?: string }>({})
+  const [priority, setPriority] = useState<string>('medium')
+  const [dueDate, setDueDate] = useState<string>('')
+  const [recurrenceRule, setRecurrenceRule] = useState<string | null>(null)
+  const [reminderOffset, setReminderOffset] = useState<string>('')
+  const [tags, setTags] = useState<string[]>([])
+  const [errors, setErrors] = useState<{ title?: string; reminderOffset?: string }>({})
   const [hasInteracted, setHasInteracted] = useState(false)
 
-  // Populate form when editing
   useEffect(() => {
     if (editTask) {
       setTitle(editTask.title)
       setDescription(editTask.description || '')
+      setPriority(editTask.priority || 'medium')
+      setDueDate(editTask.due_date ? editTask.due_date.substring(0, 16) : '')
+      setRecurrenceRule(editTask.recurrence_rule || null)
+      setReminderOffset(editTask.reminder_offset ? String(editTask.reminder_offset) : '')
+      setTags(editTask.tags || [])
       setIsExpanded(true)
       setErrors({})
       setHasInteracted(false)
     }
   }, [editTask])
 
-  // Validation
-  const validateTitle = (value: string): string | undefined => {
-    if (!value.trim()) {
-      return 'Task title is required'
-    }
-    if (value.length > 500) {
-      return 'Title must be 500 characters or less'
-    }
-    return undefined
+  const reset = () => {
+    setTitle('')
+    setDescription('')
+    setPriority('medium')
+    setDueDate('')
+    setRecurrenceRule(null)
+    setReminderOffset('')
+    setTags([])
+    setErrors({})
+    setHasInteracted(false)
   }
 
-  const validateDescription = (value: string): string | undefined => {
-    if (value.length > 5000) {
-      return 'Description must be 5000 characters or less'
+  const validate = () => {
+    const errs: typeof errors = {}
+    if (!title.trim()) errs.title = 'Title is required'
+    else if (title.length > 500) errs.title = 'Max 500 characters'
+    if (reminderOffset && !dueDate) errs.reminderOffset = 'Reminder requires a due date'
+    else if (reminderOffset) {
+      const n = parseInt(reminderOffset, 10)
+      if (isNaN(n) || n <= 0) errs.reminderOffset = 'Must be a positive number'
     }
-    return undefined
+    return errs
   }
 
-  // Handle title change with validation
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setTitle(value)
-    if (hasInteracted) {
-      setErrors((prev) => ({ ...prev, title: validateTitle(value) }))
-    }
-  }
-
-  // Handle description change with validation
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value
-    setDescription(value)
-    if (hasInteracted) {
-      setErrors((prev) => ({ ...prev, description: validateDescription(value) }))
-    }
-  }
-
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setHasInteracted(true)
+    const errs = validate()
+    if (Object.keys(errs).length) { setErrors(errs); return }
 
-    // Validate all fields
-    const titleError = validateTitle(title)
-    const descriptionError = validateDescription(description)
-
-    if (titleError || descriptionError) {
-      setErrors({
-        title: titleError,
-        description: descriptionError,
-      })
-      return
+    const taskData: TaskFormData = {
+      title: title.trim(),
+      description: description.trim(),
+      priority,
+      due_date: dueDate ? new Date(dueDate).toISOString() : null,
+      recurrence_rule: recurrenceRule || null,
+      reminder_offset: reminderOffset ? parseInt(reminderOffset, 10) : null,
+      tags: tags.length > 0 ? tags : undefined,
     }
 
-    // Submit
     if (isEditMode && editTask) {
-      onTaskUpdated?.(editTask.id, {
-        title: title.trim(),
-        description: description.trim(),
-      })
+      onTaskUpdated?.(editTask.id, taskData)
     } else {
-      onTaskCreated?.({
-        title: title.trim(),
-        description: description.trim(),
-      })
-    }
-
-    // Reset form (except in edit mode - parent will close it)
-    if (!isEditMode) {
-      setTitle('')
-      setDescription('')
-      setErrors({})
-      setHasInteracted(false)
+      onTaskCreated?.(taskData)
+      reset()
       setIsExpanded(false)
     }
   }
 
-  // Handle cancel
   const handleCancel = () => {
-    setTitle('')
-    setDescription('')
-    setErrors({})
-    setHasInteracted(false)
-    if (!isEditMode) {
-      setIsExpanded(false)
-    }
+    reset()
+    if (!isEditMode) setIsExpanded(false)
     onCancel?.()
   }
 
-  // Collapsed state - just a button to expand
   if (!isExpanded) {
     return (
-      <div className="mb-8 animate-slide-up">
-        <button
-          onClick={() => setIsExpanded(true)}
-          className="
-            w-full
-            px-6 py-5
-            bg-white
-            border-2 border-dashed border-gray-300
-            rounded-2xl
-            transition-all duration-300 ease-out
-            hover:border-primary-400
-            hover:bg-primary-50/50
-            hover:scale-[1.01]
-            focus:outline-none
-            focus:ring-4
-            focus:ring-primary-500/20
-            group
-          "
-        >
-          <div className="flex items-center justify-center gap-3">
-            <div className="
-              w-12 h-12
-              bg-gradient-to-br from-primary-500 to-primary-600
-              rounded-2xl
-              flex items-center justify-center
-              shadow-lg shadow-primary-500/30
-              group-hover:shadow-xl group-hover:shadow-primary-500/40
-              group-hover:scale-110
-              transition-all duration-300
-            ">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={3}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <div className="text-left">
-              <div className="text-lg font-bold text-gray-900 tracking-tight">
-                Create New Task
-              </div>
-              <div className="text-sm text-gray-500 font-light">
-                Click to add a task to your list
-              </div>
-            </div>
-          </div>
-        </button>
-      </div>
+      <button
+        onClick={() => setIsExpanded(true)}
+        className="w-full flex items-center gap-2 h-10 px-4 text-sm text-gray-400 hover:text-teal-500 border border-dashed border-gray-300 hover:border-teal-300 rounded-xl transition-colors"
+      >
+        <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        Add a task...
+      </button>
     )
   }
 
-  // Expanded state - full form
-  return (
-    <div className="mb-8 animate-slide-up">
-      <div className="
-        bg-white
-        border-2 border-primary-200
-        rounded-3xl
-        shadow-xl shadow-primary-500/10
-        overflow-hidden
-      ">
-        {/* Form header */}
-        <div className="
-          px-6 py-4
-          bg-gradient-to-r from-primary-50 to-primary-100/50
-          border-b-2 border-primary-200
-        ">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="
-                w-10 h-10
-                bg-gradient-to-br from-primary-500 to-primary-600
-                rounded-xl
-                flex items-center justify-center
-                shadow-lg shadow-primary-500/30
-              ">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-                  {isEditMode ? 'Edit Task' : 'New Task'}
-                </h3>
-                <p className="text-xs text-gray-600 font-light">
-                  {isEditMode ? 'Update the task details' : 'Fill in the details below'}
-                </p>
-              </div>
-            </div>
+  const inputCls = 'w-full h-9 px-3 text-sm rounded-lg border outline-none transition-all focus:ring-2 focus:ring-teal-100'
 
-            {/* Close button */}
-            <button
-              onClick={handleCancel}
-              className="
-                w-8 h-8
-                rounded-xl
-                flex items-center justify-center
-                text-gray-500
-                hover:text-gray-700
-                hover:bg-white
-                transition-all duration-200
-                focus:outline-none
-                focus:ring-2
-                focus:ring-primary-500
-              "
-              aria-label="Cancel"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-slide-down">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <h3 className="text-sm font-semibold text-gray-900">{isEditMode ? 'Edit task' : 'New task'}</h3>
+        <button onClick={handleCancel} aria-label="Close"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        {/* Title */}
+        <div>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); if (hasInteracted) setErrors((p) => ({ ...p, title: undefined })) }}
+            placeholder="Task title *"
+            maxLength={500}
+            className={`${inputCls} ${errors.title ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-teal-400'}`}
+          />
+          {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
         </div>
 
-        {/* Form content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Title input */}
-          <Input
-            label="Task Title"
-            type="text"
-            placeholder="e.g., Buy groceries, Finish report, Call mom..."
-            value={title}
-            onChange={handleTitleChange}
-            error={errors.title}
-            required
-            showCharCount
-            maxCharCount={500}
-            icon={
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            }
-          />
+        {/* Description */}
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Description (optional)"
+          rows={2}
+          maxLength={5000}
+          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all resize-none"
+        />
 
-          {/* Description input */}
-          <Input
-            label="Description"
-            placeholder="Add any additional details (optional)..."
-            value={description}
-            onChange={handleDescriptionChange}
-            error={errors.description}
-            multiline
-            rows={4}
-            showCharCount
-            maxCharCount={5000}
-            helperText="Optional - add context, notes, or subtasks"
-          />
+        {/* Priority + Tags */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <PrioritySelector value={priority} onChange={setPriority} />
+          <TagInput value={tags} onChange={setTags} maxTags={10} />
+        </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-3 pt-2">
-            <Button
-              type="submit"
-              variant="primary"
-              size="large"
-              fullWidth
-              isLoading={isSubmitting}
-              leftIcon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        {/* Due date + Reminder */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <DueDatePicker value={dueDate} onChange={setDueDate} showClear />
+          <ReminderOffsetInput value={reminderOffset} onChange={setReminderOffset} hasDueDate={!!dueDate} error={errors.reminderOffset} />
+        </div>
+
+        {/* Recurrence */}
+        <RecurrenceInput value={recurrenceRule} onChange={setRecurrenceRule} />
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="h-9 px-5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-              }
-            >
-              {isEditMode ? 'Update Task' : 'Create Task'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="large"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </div>
+                Saving…
+              </>
+            ) : (isEditMode ? 'Update task' : 'Create task')}
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+            className="h-9 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   )
 }

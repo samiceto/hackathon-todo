@@ -1,0 +1,28 @@
+{
+  "chatInterface": {
+    "title": "AI ٹاسک اسسٹنٹ",
+    "poweredBy": "OpenAI کے زریعے",
+    "newChat": "نیا چیٹ",
+    "placeholder": "اپنے کاموں کا نظم کرنے کے لیے کہیں... یا بولنے کے لیے مائیک کو دبائیں!",
+    "failedToSend": "پیغام بھیجنے میں ناکامی ہوئی۔ براہ کرم دوبارہ کوشش کریں۔",
+    "errorProcessing": "معذرت، آپ کی درخواست کو پروسیس کرنے میں مسئلہ پیش آیا۔ براہ کرم دوبارہ کوشش کریں۔",
+    "startedNewConversation": "نئی گفتگو شروع کی گئی"
+  },
+  "messageInput": {
+    "placeholder": "ایک پیغام ٹائپ کریں...",
+    "sendMessage": "پیغام بھیجیں",
+    "send": "بھیجیں",
+    "enterToSend": "بھیجنے کے لیے اینٹر دبائیں",
+    "shiftEnterForNewLine": "نئی لائن کے لیے شفٹ + اینٹر",
+    "clickMicToSpeak": "بولنے کے لیے مائیک دبائیں",
+    "listening": "سنوائی جا رہی ہے... روکنے کے لیے دبائیں",
+    "stopRecording": "ریکارڈنگ بند کریں",
+    "startVoiceRecording": "صوتی ریکارڈنگ شروع کریں",
+    "voiceInput": "صوتی ان پٹ"
+  },
+  "languageSwitcher": {
+    "english": "انگریزی",
+    "urdu": "اردو",
+    "selectLanguage": "زبان منتخب کریں"
+  }
+}

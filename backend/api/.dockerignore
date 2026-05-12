@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment files (NEVER include secrets)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+.tox/
+.nox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (allow README.md for build, exclude others)
+docs/
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE.md
+
+# Specifications and history (not needed in container)
+specs/
+history/
+.specify/
+.spec-kit/
+
+# Tests (exclude from production image)
+tests/
+test_*.py
+*_test.py
+
+# Logs
+*.log
+logs/
+
+# Database files (use external database)
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Docker files (don't include Docker files in Docker image)
+Dockerfile*
+.dockerignore
+docker-compose*.yml

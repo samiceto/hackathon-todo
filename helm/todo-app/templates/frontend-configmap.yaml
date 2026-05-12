@@ -1,0 +1,22 @@
+# Frontend ConfigMap
+# Helm template for storing non-sensitive frontend configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "todo-app.fullname" . }}-frontend-config
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+data:
+  # Backend API URL (internal cluster service)
+  NEXT_PUBLIC_API_URL: {{ .Values.frontend.config.nextPublicApiUrl | quote }}
+
+  # OpenAI ChatKit domain key (public, non-sensitive)
+  NEXT_PUBLIC_OPENAI_DOMAIN_KEY: {{ .Values.frontend.config.nextPublicOpenaiDomainKey | default "" | quote }}
+
+  # Application environment
+  NEXT_PUBLIC_ENVIRONMENT: {{ .Values.global.environment | default "production" | quote }}
+
+  # Feature flags (optional)
+  NEXT_PUBLIC_ENABLE_CHAT: {{ .Values.frontend.config.enableChat | default "true" | quote }}
+  NEXT_PUBLIC_ENABLE_TASKS: {{ .Values.frontend.config.enableTasks | default "true" | quote }}

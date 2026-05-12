@@ -70,10 +70,11 @@ async def debug_cors():
 
 
 # API router registration
-from .api import auth, tasks
+from .api import auth, tasks, chatkit
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(tasks.router, prefix="/api", tags=["Tasks"])
+app.include_router(chatkit.router, prefix="/api", tags=["ChatKit"])
 
 
 if __name__ == "__main__":

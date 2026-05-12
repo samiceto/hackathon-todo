@@ -1,0 +1,160 @@
+✅ Todo Chatbot application has been successfully deployed!
+
+📦 Chart: {{ .Chart.Name }} (version {{ .Chart.Version }})
+🏷️  App Version: {{ .Chart.AppVersion }}
+🎯 Release: {{ .Release.Name }}
+📍 Namespace: {{ .Release.Namespace }}
+🌍 Environment: {{ .Values.global.environment }}
+
+---
+
+## 🚀 Deployment Status
+
+Check the status of your deployment:
+
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+Expected output:
+  NAME                              READY   STATUS    RESTARTS   AGE
+  {{ include "todo-app.fullname" . }}-backend-xxxxx    1/1     Running   0          30s
+  {{ include "todo-app.fullname" . }}-frontend-xxxxx   1/1     Running   0          30s
+
+---
+
+## 🔍 Accessing the Application
+
+### Backend API (FastAPI)
+
+The backend service is running on port {{ .Values.backend.service.port }}.
+
+{{- if eq .Values.backend.service.type "ClusterIP" }}
+
+Access via port-forward:
+
+  kubectl port-forward svc/{{ include "todo-app.fullname" . }}-backend {{ .Values.backend.service.port }}:{{ .Values.backend.service.port }}
+
+Then visit: http://localhost:{{ .Values.backend.service.port }}
+Health check: http://localhost:{{ .Values.backend.service.port }}/health
+
+{{- else if eq .Values.backend.service.type "NodePort" }}
+
+Access via NodePort:
+
+  minikube service {{ include "todo-app.fullname" . }}-backend
+
+{{- else if eq .Values.backend.service.type "LoadBalancer" }}
+
+Get the external IP:
+
+  kubectl get svc {{ include "todo-app.fullname" . }}-backend
+
+{{- end }}
+
+### Frontend Application (Next.js)
+
+The frontend service is running on port {{ .Values.frontend.service.port }}.
+
+{{- if eq .Values.frontend.service.type "ClusterIP" }}
+
+Access via port-forward:
+
+  kubectl port-forward svc/{{ include "todo-app.fullname" . }}-frontend {{ .Values.frontend.service.port }}:{{ .Values.frontend.service.port }}
+
+Then visit: http://localhost:{{ .Values.frontend.service.port }}
+
+{{- else if eq .Values.frontend.service.type "NodePort" }}
+
+Access via NodePort:
+
+  minikube service {{ include "todo-app.fullname" . }}-frontend
+
+Or directly via Minikube IP:
+
+  MINIKUBE_IP=$(minikube ip)
+  echo "Frontend URL: http://$MINIKUBE_IP:{{ .Values.frontend.service.nodePort }}"
+
+{{- else if eq .Values.frontend.service.type "LoadBalancer" }}
+
+Get the external IP:
+
+  kubectl get svc {{ include "todo-app.fullname" . }}-frontend
+
+{{- end }}
+
+---
+
+## 📊 Monitoring & Logs
+
+View backend logs:
+
+  kubectl logs -f -l app.kubernetes.io/component=backend,app.kubernetes.io/instance={{ .Release.Name }}
+
+View frontend logs:
+
+  kubectl logs -f -l app.kubernetes.io/component=frontend,app.kubernetes.io/instance={{ .Release.Name }}
+
+Check pod resource usage (requires metrics-server):
+
+  kubectl top pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+---
+
+## 🔧 Configuration
+
+View backend configuration:
+
+  kubectl get configmap {{ include "todo-app.fullname" . }}-backend-config -o yaml
+
+View backend secrets (values are base64 encoded):
+
+  kubectl get secret {{ include "todo-app.fullname" . }}-backend-secrets -o yaml
+
+---
+
+## 🛠️ Helm Management
+
+Upgrade the deployment:
+
+  helm upgrade {{ .Release.Name }} ./helm/todo-app -f values-dev.yaml
+
+Rollback to previous version:
+
+  helm rollback {{ .Release.Name }}
+
+View deployment history:
+
+  helm history {{ .Release.Name }}
+
+Uninstall the application:
+
+  helm uninstall {{ .Release.Name }}
+
+---
+
+## 🧪 Test the Application
+
+1. **Backend Health Check**:
+   ```bash
+   kubectl port-forward svc/{{ include "todo-app.fullname" . }}-backend 8000:8000 &
+   curl http://localhost:8000/health
+   ```
+
+2. **Create a Task** (Traditional UI):
+   Visit: http://<frontend-url>/tasks
+
+3. **Chat Interface** (AI Chatbot):
+   Visit: http://<frontend-url>/chat
+   Try: "Add a task to buy groceries"
+
+---
+
+## 📚 Documentation
+
+For more information, see:
+- Quickstart Guide: specs/004-k8s-deployment/quickstart.md
+- Architecture Plan: specs/004-k8s-deployment/plan.md
+- Troubleshooting: specs/004-k8s-deployment/TROUBLESHOOTING.md
+
+---
+
+Happy coding! 🎉

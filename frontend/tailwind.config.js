@@ -71,12 +71,35 @@ module.exports = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
       },
       maxWidth: {
         '8xl': '88rem',
       },
+      animation: {
+        'bounce': 'bounce 1s infinite',
+      },
+      keyframes: {
+        bounce: {
+          '0%, 100%': {
+            transform: 'translateY(-25%)',
+            animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)',
+          },
+          '50%': {
+            transform: 'translateY(0)',
+            animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)',
+          },
+        },
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    // Add RTL support via the tailwindcss-flipped plugin or by using [dir="rtl"] selectors
+  ],
+  // Add safelist for dynamic delay classes
+  safelist: [
+    'delay-100',
+    'delay-200',
+    'delay-300',
+  ],
 }

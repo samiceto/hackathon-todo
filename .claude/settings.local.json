@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(kubectl get deployment -l app.kubernetes.io/instance=todo-app)",
+      "Bash(kubectl get pods:*)",
+      "Bash(docker images:*)",
+      "Bash(minikube image load:*)"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{{- if .Values.dapr.enabled }}
+{{- if not (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "components.dapr.io") }}
+{{- fail "Dapr CRDs not found. Run 'dapr init -k' before deploying with dapr.enabled=true" }}
+{{- end }}
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ .Values.dapr.statestore.name | default "statestore-redis" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.dapr.statestore.type | default "state.redis" }}
+  version: {{ .Values.dapr.statestore.version | default "v1" }}
+  metadata:
+    {{- range .Values.dapr.statestore.metadata }}
+    - name: {{ .name }}
+      {{- if .value }}
+      value: {{ .value | quote }}
+      {{- else if .secretKeyRef }}
+      secretKeyRef:
+        name: {{ .secretKeyRef.name }}
+        key: {{ .secretKeyRef.key }}
+      {{- end }}
+    {{- end }}
+  # Scope to specific apps (backend and reminder-service)
+  scopes:
+    - backend
+    - reminder-service
+{{- end }}

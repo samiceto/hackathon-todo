@@ -69,6 +69,9 @@ frontend/dist/
 # Helm secrets (NEVER commit secrets)
 helm/**/secrets.yaml
 helm/**/*-secrets.yaml
+helm/**/values-dev.yaml
+helm/**/values-local.yaml
+helm/**/values-dev.local.yaml
 
 # Kubernetes local configs
 .kube/

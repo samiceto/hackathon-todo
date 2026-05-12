@@ -1,0 +1,162 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to Docker Hub
+        run: |
+          echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login \
+            -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+
+      # ── Backend ──────────────────────────────────────
+      - name: Build and push backend image
+        run: |
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:latest ./backend/api/
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:latest
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # ── Dapr Components ───────────────────────────────
+      - name: Get Container Apps Environment name
+        id: aca-env
+        run: |
+          ENV_ID=$(az containerapp show \
+            --name todo-backend \
+            --resource-group todoapp \
+            --query properties.environmentId -o tsv)
+          ENV_NAME="${ENV_ID##*/}"
+          echo "name=$ENV_NAME" >> $GITHUB_OUTPUT
+
+      - name: Register Dapr pubsub component (Azure Service Bus)
+        run: |
+          cat > /tmp/pubsub-component.yaml << 'EOF'
+          componentType: pubsub.azure.servicebus.topics
+          version: v1
+          metadata:
+            - name: connectionString
+              value: "PLACEHOLDER_SB_CONNECTION"
+          scopes:
+            - todo-backend
+            - todo-reminder-service
+          EOF
+          # Replace placeholder with actual secret value
+          sed -i "s|PLACEHOLDER_SB_CONNECTION|${{ secrets.SERVICE_BUS_CONNECTION_STRING }}|g" /tmp/pubsub-component.yaml
+          az containerapp env dapr-component set \
+            --name ${{ steps.aca-env.outputs.name }} \
+            --resource-group todoapp \
+            --dapr-component-name pubsub-kafka \
+            --yaml /tmp/pubsub-component.yaml
+
+      - name: Register Dapr cron binding component
+        run: |
+          cat > /tmp/cron-component.yaml << 'EOF'
+          componentType: bindings.cron
+          version: v1
+          metadata:
+            - name: schedule
+              value: "@every 1m"
+          scopes:
+            - todo-reminder-service
+          EOF
+          az containerapp env dapr-component set \
+            --name ${{ steps.aca-env.outputs.name }} \
+            --resource-group todoapp \
+            --dapr-component-name cron-reminder-processor \
+            --yaml /tmp/cron-component.yaml
+
+      # ── Deploy Backend with Dapr ──────────────────────
+      - name: Deploy backend with Dapr enabled
+        run: |
+          az containerapp update \
+            --name todo-backend \
+            --resource-group todoapp \
+            --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:latest \
+            --set-env-vars \
+              DATABASE_URL=${{ secrets.DATABASE_URL }} \
+              OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+              BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }} \
+            --dapr-enabled \
+            --dapr-app-id todo-backend \
+            --dapr-app-port 8000
+
+      - name: Get backend URL
+        id: backend-url
+        run: |
+          URL=$(az containerapp show \
+            --name todo-backend \
+            --resource-group todoapp \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          echo "url=https://$URL" >> $GITHUB_OUTPUT
+
+      # ── Frontend ─────────────────────────────────────
+      - name: Build and push frontend image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ steps.backend-url.outputs.url }} \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:latest \
+            ./frontend/
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:latest
+
+      - name: Deploy frontend
+        run: |
+          az containerapp update \
+            --name todo-frontend \
+            --resource-group todoapp \
+            --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:latest
+
+      # ── Reminder Service ──────────────────────────────
+      - name: Build and push reminder-service image
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest \
+            ./backend/reminder-service/
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest
+
+      - name: Deploy reminder-service with Dapr enabled
+        run: |
+          if az containerapp show --name todo-reminder-service --resource-group todoapp &>/dev/null; then
+            az containerapp update \
+              --name todo-reminder-service \
+              --resource-group todoapp \
+              --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest \
+              --set-env-vars \
+                DATABASE_URL=${{ secrets.DATABASE_URL }} \
+                DAPR_PUBSUB_NAME=pubsub-kafka \
+                LOG_LEVEL=INFO \
+              --dapr-enabled \
+              --dapr-app-id todo-reminder-service \
+              --dapr-app-port 8001
+          else
+            az containerapp create \
+              --name todo-reminder-service \
+              --resource-group todoapp \
+              --environment ${{ steps.aca-env.outputs.name }} \
+              --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest \
+              --target-port 8001 \
+              --ingress internal \
+              --min-replicas 1 \
+              --max-replicas 1 \
+              --env-vars \
+                DATABASE_URL=${{ secrets.DATABASE_URL }} \
+                DAPR_PUBSUB_NAME=pubsub-kafka \
+                LOG_LEVEL=INFO \
+              --dapr-enabled \
+              --dapr-app-id todo-reminder-service \
+              --dapr-app-port 8001
+          fi

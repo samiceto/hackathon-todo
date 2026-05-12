@@ -26,7 +26,7 @@ backend:
   # Development configuration
   config:
     corsOrigins: "http://localhost:3000,http://localhost:8000,http://localhost:8080"
-    databaseUrl: "postgresql://neondb_owner:npg_QVsP5gmjC4wb@ep-snowy-cell-a4068rur-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    databaseUrl: "postgressql url here"
 
     logLevel: "debug"
 
@@ -35,7 +35,7 @@ backend:
   #   --set backend.secrets.openaiApiKey=<YOUR_OPENAI_KEY>
   secrets:
     openaiApiKey: "your-api-key-here"
-    betterAuthSecret: "uwOPm1ir2FvGcIcJoOGyub2FQPQPysvC"
+    betterAuthSecret: "better auth secret here"
 
 # Frontend configuration overrides
 frontend:

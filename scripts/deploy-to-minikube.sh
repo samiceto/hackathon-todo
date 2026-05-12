@@ -31,19 +31,20 @@ fi
 echo -e "${GREEN}✅ Minikube is running${NC}"
 echo ""
 
-# Check if Dapr is installed
+# Check if Dapr is installed — auto-install if missing
 echo -e "${BLUE}🔍 Checking Dapr installation...${NC}"
-if ! kubectl get pods -n dapr-system &> /dev/null; then
-    echo -e "${RED}❌ Error: Dapr is not installed${NC}"
-    echo -e "${YELLOW}💡 Install Dapr first: ./scripts/install-dapr-minikube.sh${NC}"
-    exit 1
-fi
-
 DAPR_PODS=$(kubectl get pods -n dapr-system --no-headers 2>/dev/null | wc -l)
-if [ "$DAPR_PODS" -eq 0 ]; then
-    echo -e "${RED}❌ Error: No Dapr pods found${NC}"
-    echo -e "${YELLOW}💡 Install Dapr first: ./scripts/install-dapr-minikube.sh${NC}"
-    exit 1
+if ! kubectl get namespace dapr-system &> /dev/null || [ "$DAPR_PODS" -eq 0 ]; then
+    echo -e "${YELLOW}⚠️  Dapr not found. Installing now...${NC}"
+    if ! command -v dapr &> /dev/null; then
+        echo -e "${RED}❌ Dapr CLI not installed. Run:${NC}"
+        echo -e "   wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash"
+        exit 1
+    fi
+    dapr init -k
+    echo -e "${BLUE}⏳ Waiting for Dapr system pods...${NC}"
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=dapr --timeout=180s -n dapr-system
+    DAPR_PODS=$(kubectl get pods -n dapr-system --no-headers 2>/dev/null | wc -l)
 fi
 echo -e "${GREEN}✅ Dapr is installed ($DAPR_PODS pods)${NC}"
 echo ""

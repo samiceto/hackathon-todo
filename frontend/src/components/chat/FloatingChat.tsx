@@ -34,12 +34,12 @@ export default function FloatingChat() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? 'Close AI chat' : 'Open AI chat'}
-        className={`fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full cursor-pointer
+        className={`fixed right-5 z-50 w-14 h-14 rounded-full cursor-pointer
           text-white shadow-lg flex items-center justify-center
           transition-all duration-200 active:scale-95 hover:scale-105
           ${isOpen
-            ? 'bg-teal-700 hover:bg-teal-800 shadow-teal-900/30'
-            : 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/40 animate-pulse-ring'
+            ? 'bottom-24 sm:bottom-5 bg-teal-700 hover:bg-teal-800 shadow-teal-900/30'
+            : 'bottom-5 bg-teal-600 hover:bg-teal-700 shadow-teal-600/40 animate-pulse-ring'
           }`}
       >
         {isOpen ? (

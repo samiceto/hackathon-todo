@@ -14,10 +14,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml ./
 
 # Install dependencies to a virtual environment
-RUN uv venv /opt/venv && \
+RUN UV_HTTP_TIMEOUT=300 uv venv /opt/venv && \
     . /opt/venv/bin/activate && \
-    uv pip compile pyproject.toml -o requirements.txt && \
-    uv pip install --no-cache-dir -r requirements.txt
+    UV_HTTP_TIMEOUT=300 uv pip compile pyproject.toml -o requirements.txt && \
+    UV_HTTP_TIMEOUT=300 uv pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Runtime stage
 FROM python:3.13-slim

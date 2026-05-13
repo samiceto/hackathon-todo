@@ -22,8 +22,12 @@ jobs:
       # ── Backend ──────────────────────────────────────
       - name: Build and push backend image
         run: |
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:latest ./backend/api/
+          docker build \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:latest \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:${{ github.sha }} \
+            ./backend/api/
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:${{ github.sha }}
 
       - name: Azure Login
         uses: azure/login@v1
@@ -84,7 +88,7 @@ jobs:
           az containerapp update \
             --name todo-backend \
             --resource-group todoapp \
-            --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:latest \
+            --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:${{ github.sha }} \
             --set-env-vars \
               DATABASE_URL=${{ secrets.DATABASE_URL }} \
               OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
@@ -108,23 +112,27 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=${{ steps.backend-url.outputs.url }} \
             -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:latest \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:${{ github.sha }} \
             ./frontend/
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:${{ github.sha }}
 
       - name: Deploy frontend
         run: |
           az containerapp update \
             --name todo-frontend \
             --resource-group todoapp \
-            --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:latest
+            --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-frontend:${{ github.sha }}
 
       # ── Reminder Service ──────────────────────────────
       - name: Build and push reminder-service image
         run: |
           docker build \
             -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }} \
             ./backend/reminder-service/
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }}
 
       - name: Deploy reminder-service with Dapr enabled
         run: |
@@ -132,7 +140,7 @@ jobs:
             az containerapp update \
               --name todo-reminder-service \
               --resource-group todoapp \
-              --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest \
+              --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }} \
               --set-env-vars \
                 DATABASE_URL=${{ secrets.DATABASE_URL }} \
                 DAPR_PUBSUB_NAME=pubsub-kafka \
@@ -145,7 +153,7 @@ jobs:
               --name todo-reminder-service \
               --resource-group todoapp \
               --environment ${{ steps.aca-env.outputs.name }} \
-              --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest \
+              --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }} \
               --target-port 8001 \
               --ingress internal \
               --min-replicas 1 \

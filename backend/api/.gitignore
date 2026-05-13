@@ -31,7 +31,6 @@ venv.bak/
 
 # UV (Python package manager)
 .uv/
-uv.lock
 
 # Testing
 .pytest_cache/

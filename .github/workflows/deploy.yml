@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - 005-step-5-cloud-deployment
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:

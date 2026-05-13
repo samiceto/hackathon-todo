@@ -84,15 +84,24 @@ jobs:
 
       # ── Deploy Backend with Dapr ──────────────────────
       - name: Deploy backend with Dapr enabled
+        env:
+          IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:${{ github.sha }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
         run: |
+          IMAGE="${IMAGE//$'\n'/}"
+          DATABASE_URL="${DATABASE_URL//$'\n'/}"
+          OPENAI_API_KEY="${OPENAI_API_KEY//$'\n'/}"
+          BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET//$'\n'/}"
           az containerapp update \
             --name todo-backend \
             --resource-group todoapp \
-            --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:${{ github.sha }} \
+            --image "$IMAGE" \
             --set-env-vars \
-              DATABASE_URL=${{ secrets.DATABASE_URL }} \
-              OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-              BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }} \
+              "DATABASE_URL=$DATABASE_URL" \
+              "OPENAI_API_KEY=$OPENAI_API_KEY" \
+              "BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET" \
             --dapr-enabled \
             --dapr-app-id todo-backend \
             --dapr-app-port 8000
@@ -135,16 +144,23 @@ jobs:
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }}
 
       - name: Deploy reminder-service with Dapr enabled
+        env:
+          IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACA_ENV_NAME: ${{ steps.aca-env.outputs.name }}
         run: |
+          IMAGE="${IMAGE//$'\n'/}"
+          DATABASE_URL="${DATABASE_URL//$'\n'/}"
+          ACA_ENV_NAME="${ACA_ENV_NAME//$'\n'/}"
           if az containerapp show --name todo-reminder-service --resource-group todoapp &>/dev/null; then
             az containerapp update \
               --name todo-reminder-service \
               --resource-group todoapp \
-              --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }} \
+              --image "$IMAGE" \
               --set-env-vars \
-                DATABASE_URL=${{ secrets.DATABASE_URL }} \
-                DAPR_PUBSUB_NAME=pubsub-kafka \
-                LOG_LEVEL=INFO \
+                "DATABASE_URL=$DATABASE_URL" \
+                "DAPR_PUBSUB_NAME=pubsub-kafka" \
+                "LOG_LEVEL=INFO" \
               --dapr-enabled \
               --dapr-app-id todo-reminder-service \
               --dapr-app-port 8001
@@ -152,16 +168,16 @@ jobs:
             az containerapp create \
               --name todo-reminder-service \
               --resource-group todoapp \
-              --environment ${{ steps.aca-env.outputs.name }} \
-              --image ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }} \
+              --environment "$ACA_ENV_NAME" \
+              --image "$IMAGE" \
               --target-port 8001 \
               --ingress internal \
               --min-replicas 1 \
               --max-replicas 1 \
               --env-vars \
-                DATABASE_URL=${{ secrets.DATABASE_URL }} \
-                DAPR_PUBSUB_NAME=pubsub-kafka \
-                LOG_LEVEL=INFO \
+                "DATABASE_URL=$DATABASE_URL" \
+                "DAPR_PUBSUB_NAME=pubsub-kafka" \
+                "LOG_LEVEL=INFO" \
               --dapr-enabled \
               --dapr-app-id todo-reminder-service \
               --dapr-app-port 8001

@@ -27,6 +27,9 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy all source files
 COPY . .
 
+# Ensure public/ exists (git doesn't track empty directories)
+RUN mkdir -p public
+
 # Build arguments for Next.js public environment variables
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}

@@ -83,7 +83,7 @@ jobs:
             --yaml /tmp/cron-component.yaml
 
       # ── Deploy Backend with Dapr ──────────────────────
-      - name: Deploy backend with Dapr enabled
+      - name: Deploy backend image and env vars
         env:
           IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/todo-backend:${{ github.sha }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -101,10 +101,16 @@ jobs:
             --set-env-vars \
               "DATABASE_URL=$DATABASE_URL" \
               "OPENAI_API_KEY=$OPENAI_API_KEY" \
-              "BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET" \
-            --dapr-enabled \
+              "BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET"
+
+      - name: Enable Dapr on backend
+        run: |
+          az containerapp dapr enable \
+            --name todo-backend \
+            --resource-group todoapp \
             --dapr-app-id todo-backend \
-            --dapr-app-port 8000
+            --dapr-app-port 8000 \
+            --dapr-app-protocol http
 
       - name: Get backend URL
         id: backend-url
@@ -143,7 +149,7 @@ jobs:
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }}
 
-      - name: Deploy reminder-service with Dapr enabled
+      - name: Deploy reminder-service
         env:
           IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/todo-reminder-service:${{ github.sha }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -160,10 +166,7 @@ jobs:
               --set-env-vars \
                 "DATABASE_URL=$DATABASE_URL" \
                 "DAPR_PUBSUB_NAME=pubsub-kafka" \
-                "LOG_LEVEL=INFO" \
-              --dapr-enabled \
-              --dapr-app-id todo-reminder-service \
-              --dapr-app-port 8001
+                "LOG_LEVEL=INFO"
           else
             az containerapp create \
               --name todo-reminder-service \
@@ -178,7 +181,17 @@ jobs:
                 "DATABASE_URL=$DATABASE_URL" \
                 "DAPR_PUBSUB_NAME=pubsub-kafka" \
                 "LOG_LEVEL=INFO" \
-              --dapr-enabled \
+              --enable-dapr \
               --dapr-app-id todo-reminder-service \
-              --dapr-app-port 8001
+              --dapr-app-port 8001 \
+              --dapr-app-protocol http
           fi
+
+      - name: Enable Dapr on reminder-service
+        run: |
+          az containerapp dapr enable \
+            --name todo-reminder-service \
+            --resource-group todoapp \
+            --dapr-app-id todo-reminder-service \
+            --dapr-app-port 8001 \
+            --dapr-app-protocol http
